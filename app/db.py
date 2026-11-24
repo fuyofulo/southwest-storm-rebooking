@@ -78,10 +78,13 @@ class CsvRepo(InMemoryRepo):
 
 
 class SupabaseRepo:
-    def __init__(self, url: str, key: str):
-        from supabase import create_client
+    def __init__(self, url: str | None = None, key: str | None = None, client=None):
+        if client is None:
+            from supabase import create_client
 
-        self.client = create_client(url, key)
+            client = create_client(url, key)
+        self.client = client
+        self._passengers: dict[str, list[dict]] = {}
 
     def _all(self, table: str, **eq) -> list[dict]:
         q = self.client.table(table).select("*")
@@ -90,6 +93,10 @@ class SupabaseRepo:
         return q.execute().data
 
     def bookings(self) -> list[Booking]:
+        # Fetch every passenger row in one query too, so a full queue run is two round trips, not 140.
+        self._passengers = {}
+        for row in self._all("passengers"):
+            self._passengers.setdefault(row["booking_id"], []).append(row)
         return [Booking.from_row(r) for r in sorted(self._all("bookings"), key=lambda r: r["booking_id"])]
 
     def booking(self, booking_id: str) -> Booking | None:
@@ -100,7 +107,7 @@ class SupabaseRepo:
         return [Flight.from_row(r) for r in self._all("flights")]
 
     def party(self, booking: Booking) -> Party:
-        rows = self._all("passengers", booking_id=booking.booking_id)
+        rows = self._passengers.get(booking.booking_id) or self._all("passengers", booking_id=booking.booking_id)
         if len(rows) != booking.party_size:
             log.warning("%s: %d passenger rows for party_size %d; re-deriving", booking.booking_id, len(rows), booking.party_size)
             return derive_party(booking)
