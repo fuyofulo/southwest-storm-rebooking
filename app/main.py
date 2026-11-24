@@ -18,6 +18,7 @@ from .db import get_repo
 from .service import RebookingService
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)  # don't log every Supabase / OpenRouter request
 log = logging.getLogger("rebooking")
 
 app = FastAPI(

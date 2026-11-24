@@ -60,6 +60,7 @@ def apply_schema(db_url: str) -> bool:
 
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    logging.getLogger("httpx").setLevel(logging.WARNING)  # don't log every Supabase request URL
     settings = get_settings()
     if not settings.use_supabase:
         print("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env first.", file=sys.stderr)
