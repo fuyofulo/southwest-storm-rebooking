@@ -309,6 +309,18 @@ button.icon.spinning svg {
   color: var(--text);
 }
 
+.seg-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.seg-divider {
+  width: 1px;
+  height: 16px;
+  margin: 0 8px;
+  background: var(--line-strong);
+}
+
 .segmented .count {
   color: var(--text-3);
   font-size: 12px;
@@ -504,6 +516,71 @@ tr.is-selected button.quiet {
 
 button.quiet:disabled {
   opacity: 0.6;
+}
+
+/* A confirmed row: who confirmed (initials) and when, where the Confirm button was. */
+.done-by {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mini-avatar {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ready) 16%, transparent);
+  color: var(--ready);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.done-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.done-card .avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ready) 16%, transparent);
+  color: var(--ready);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.done-card > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.done-title {
+  font-weight: 500;
+}
+
+.done-check {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ready) 16%, transparent);
+  color: var(--ready);
 }
 
 .status {

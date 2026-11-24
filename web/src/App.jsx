@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { confirmBooking, fetchWaiting } from './api.js'
-import { day, matches } from './format.js'
+import { confirmBooking, fetchConfirmed, fetchWaiting } from './api.js'
+import { day, initials, matches } from './format.js'
 import { BookingList } from './List.jsx'
 import { Detail } from './Detail.jsx'
 import { Check, ChevronLeft, ChevronRight, Moon, Refresh, Search, Sun } from './icons.jsx'
@@ -8,12 +8,16 @@ import { Check, ChevronLeft, ChevronRight, Moon, Refresh, Search, Sun } from './
 const AGENT_KEY = 'rebooking.agent'
 const THEME_KEY = 'rebooking.theme'
 
+// The first four look at bookings still waiting; Confirmed is the ones already done.
 const FILTERS = [
-  { id: 'all', label: 'All' },
+  { id: 'all', label: 'Waiting' },
   { id: 'ready_to_confirm', label: 'Ready' },
   { id: 'split_party_confirm', label: 'Split' },
   { id: 'no_option_found', label: 'No option' },
+  { id: 'confirmed', label: 'Confirmed', apart: true },
 ]
+
+const CONFIRMATION_FIELDS = ['booking_id', 'confirmed_by', 'confirmed_at', 'suggestion_status', 'option_id', 'flight_nos']
 
 // Storage can be blocked (private window, previews): the page works without it.
 function readStored(key) {
@@ -45,12 +49,6 @@ function isTyping(el) {
   return el.tagName === 'INPUT' && !['checkbox', 'radio', 'button', 'submit'].includes(el.type)
 }
 
-function initials(name) {
-  const words = name.trim().split(/\s+/).filter(Boolean)
-  if (!words.length) return '?'
-  return (words[0][0] + (words.length > 1 ? words[words.length - 1][0] : '')).toUpperCase()
-}
-
 function CenterState({ tone, title, children }) {
   return (
     <div className={`state${tone ? ` ${tone}` : ''}`} role={tone === 'error' ? 'alert' : 'status'}>
@@ -61,7 +59,8 @@ function CenterState({ tone, title, children }) {
 }
 
 export default function App() {
-  const [items, setItems] = useState([])
+  const [items, setItems] = useState([]) // waiting
+  const [done, setDone] = useState([]) // already confirmed, most recent first
   const [phase, setPhase] = useState('loading') // loading | ready | error
   const [refreshing, setRefreshing] = useState(false)
   const [loadError, setLoadError] = useState(null)
@@ -75,7 +74,6 @@ export default function App() {
   const [toast, setToast] = useState(null)
   const [filter, setFilter] = useState('all')
   const [query, setQuery] = useState('')
-  const [confirmedCount, setConfirmedCount] = useState(0)
   const [theme, setTheme] = useState(() => readStored(THEME_KEY) || null)
   const agentInput = useRef(null)
   const searchInput = useRef(null)
@@ -91,7 +89,9 @@ export default function App() {
     const started = Date.now()
     const tick = setInterval(() => setElapsed(Math.round((Date.now() - started) / 1000)), 1000)
     try {
-      setItems(await fetchWaiting())
+      const [waiting, confirmed] = await Promise.all([fetchWaiting(), fetchConfirmed()])
+      setItems(waiting)
+      setDone(confirmed)
       setPhase('ready')
     } catch (err) {
       setLoadError(err.message)
@@ -120,14 +120,17 @@ export default function App() {
   }, [toast])
 
   const counts = useMemo(() => {
-    const c = { all: items.length }
+    const c = { all: items.length, confirmed: done.length }
     for (const s of items) c[s.suggestion_status] = (c[s.suggestion_status] || 0) + 1
     return c
-  }, [items])
+  }, [items, done])
 
   const visible = useMemo(
-    () => items.filter((s) => (filter === 'all' || s.suggestion_status === filter) && matches(s, query)),
-    [items, filter, query],
+    () =>
+      filter === 'confirmed'
+        ? done.filter((s) => matches(s, query))
+        : items.filter((s) => (filter === 'all' || s.suggestion_status === filter) && matches(s, query)),
+    [items, done, filter, query],
   )
   const selected = visible.find((s) => s.booking_id === selectedId) || visible[0] || null
   const index = selected ? visible.indexOf(selected) : -1
@@ -140,6 +143,7 @@ export default function App() {
   function move(delta) {
     if (!visible.length) return
     const next = visible[Math.min(Math.max(index + delta, 0), visible.length - 1)]
+    if (!next) return
     open(next.booking_id)
     requestAnimationFrame(() => document.getElementById(`row-${next.booking_id}`)?.scrollIntoView({ block: 'nearest' }))
   }
@@ -151,14 +155,16 @@ export default function App() {
 
   function removeAndAdvance(id) {
     // Open the next booking straight away so the agent can carry on without another click.
+    // If the agent already moved to another booking while this one was saving, leave them there.
     const i = visible.findIndex((s) => s.booking_id === id)
     const rest = visible.filter((s) => s.booking_id !== id)
+    const next = rest[Math.min(Math.max(i, 0), rest.length - 1)]?.booking_id ?? null
     setItems((cur) => cur.filter((s) => s.booking_id !== id))
-    setSelectedId(rest[Math.min(Math.max(i, 0), rest.length - 1)]?.booking_id ?? null)
+    setSelectedId((cur) => (cur === null || cur === id || !rest.some((s) => s.booking_id === cur) ? next : cur))
   }
 
   async function confirm(s) {
-    if (busyId) return
+    if (busyId || s.confirmation) return
     setConfirmError(null)
     if (!agent.trim()) {
       setSelectedId(s.booking_id)
@@ -173,14 +179,16 @@ export default function App() {
     }
     setBusyId(s.booking_id)
     try {
-      await confirmBooking(s.booking_id, agent.trim(), s.suggestion?.option_id ?? null)
-      setConfirmedCount((n) => n + 1)
+      const record = await confirmBooking(s.booking_id, agent.trim(), s.suggestion?.option_id ?? null)
+      const confirmation = Object.fromEntries(CONFIRMATION_FIELDS.map((k) => [k, record[k]]))
+      setDone((cur) => [{ ...s, confirmation }, ...cur.filter((x) => x.booking_id !== s.booking_id)])
       setToast(`${s.booking_id} recorded. Now book it in Southwest's system.`)
       removeAndAdvance(s.booking_id)
     } catch (err) {
       if (err.status === 409 && /already confirmed/i.test(err.message)) {
-        setToast(`${s.booking_id} was already confirmed by another agent, so it left your list.`)
+        setToast(`${s.booking_id} was already confirmed by another agent. It's under Confirmed.`)
         removeAndAdvance(s.booking_id)
+        load({ quiet: true })
       } else {
         setConfirmError({ id: s.booking_id, message: err.message })
       }
@@ -206,7 +214,8 @@ export default function App() {
     if (e.key === 'j' || e.key === 'ArrowDown') move(1)
     else if (e.key === 'k' || e.key === 'ArrowUp') move(-1)
     else if (e.key === '/') searchInput.current?.focus()
-    else if (e.key === 'a' && selected?.suggestion_status === 'split_party_confirm') setAgree(selected.booking_id, !agreed[selected.booking_id])
+    else if (e.key === 'a' && selected?.suggestion_status === 'split_party_confirm' && !selected.confirmation)
+      setAgree(selected.booking_id, !agreed[selected.booking_id])
     else if (e.key === 'r') load({ quiet: true })
     else return
     e.preventDefault()
@@ -217,7 +226,22 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  const requestDate = items[0]?.request_date
+  // What to say when the current view has nothing to show (never an empty panel).
+  let empty = null
+  if (phase === 'ready' && !visible.length) {
+    const showWaiting = { label: `Show waiting (${items.length})`, run: () => (setFilter('all'), setQuery('')) }
+    if (query) empty = { title: 'No bookings match', text: `Nothing here matches “${query}”.`, action: { label: 'Clear search', run: () => setQuery('') } }
+    else if (filter === 'confirmed') empty = { title: 'Nothing confirmed yet', text: 'Bookings appear here once an agent confirms them.', action: items.length ? showWaiting : null }
+    else if (!items.length)
+      empty = {
+        title: 'Nothing waiting',
+        text: 'Every cancelled booking has been confirmed by an agent.',
+        action: done.length ? { label: `See confirmed (${done.length})`, run: () => setFilter('confirmed') } : null,
+      }
+    else empty = { title: 'No bookings match', text: 'Nothing waiting has this status.', action: showWaiting }
+  }
+
+  const requestDate = (items[0] || done[0])?.request_date
   const live = phase === 'error' ? 'offline' : phase === 'loading' || refreshing ? 'loading' : 'live'
 
   return (
@@ -272,16 +296,13 @@ export default function App() {
       <div className="subbar">
         <div className="segmented" role="tablist" aria-label="Filter by suggestion_status">
           {FILTERS.map((f) => (
-            <button
-              key={f.id}
-              role="tab"
-              aria-selected={filter === f.id}
-              className={filter === f.id ? 'on' : undefined}
-              onClick={() => setFilter(f.id)}
-            >
-              {f.label}
-              <span className="count">{counts[f.id] || 0}</span>
-            </button>
+            <span key={f.id} className="seg-item">
+              {f.apart && <span className="seg-divider" aria-hidden="true" />}
+              <button role="tab" aria-selected={filter === f.id} className={filter === f.id ? 'on' : undefined} onClick={() => setFilter(f.id)}>
+                {f.label}
+                <span className="count">{counts[f.id] || 0}</span>
+              </button>
+            </span>
           ))}
         </div>
 
@@ -337,24 +358,14 @@ export default function App() {
           </CenterState>
         )}
 
-        {phase === 'ready' && items.length === 0 && (
-          <CenterState title="Nothing waiting">
-            <p>Every cancelled booking has been confirmed by an agent.</p>
-          </CenterState>
-        )}
-
-        {phase === 'ready' && items.length > 0 && visible.length === 0 && (
-          <CenterState title="No bookings match">
-            <p>Nothing waiting fits this filter or search.</p>
-            <button
-              className="soft"
-              onClick={() => {
-                setFilter('all')
-                setQuery('')
-              }}
-            >
-              Show all {items.length}
-            </button>
+        {empty && (
+          <CenterState title={empty.title}>
+            <p>{empty.text}</p>
+            {empty.action && (
+              <button className="soft" onClick={empty.action.run}>
+                {empty.action.label}
+              </button>
+            )}
           </CenterState>
         )}
 
@@ -385,7 +396,7 @@ export default function App() {
             <strong>{items.length}</strong> waiting
           </span>
           <span>
-            <strong>{confirmedCount}</strong> confirmed this session
+            <strong>{done.length}</strong> confirmed
           </span>
           {requestDate && (
             <span className="wide-only">

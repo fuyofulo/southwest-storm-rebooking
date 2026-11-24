@@ -1,4 +1,4 @@
-import { short, STATUS_HELP } from './format.js'
+import { initials, short, stamp, STATUS_HELP } from './format.js'
 
 export function Status({ status }) {
   return (
@@ -78,16 +78,23 @@ export function BookingList({ items, selectedId, busyId, onOpen, onConfirm }) {
                   <Status status={s.suggestion_status} />
                 </td>
                 <td className="act">
-                  <button
-                    className="quiet"
-                    disabled={busy}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onConfirm(s)
-                    }}
-                  >
-                    {busy ? 'Saving' : 'Confirm'}
-                  </button>
+                  {s.confirmation ? (
+                    <span className="done-by" title={`Confirmed by ${s.confirmation.confirmed_by}, ${stamp(s.confirmation.confirmed_at)}`}>
+                      <span className="mini-avatar">{initials(s.confirmation.confirmed_by)}</span>
+                      {stamp(s.confirmation.confirmed_at).split(' ').pop()}
+                    </span>
+                  ) : (
+                    <button
+                      className="quiet"
+                      disabled={busy}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onConfirm(s)
+                      }}
+                    >
+                      {busy ? 'Saving' : 'Confirm'}
+                    </button>
+                  )}
                 </td>
               </tr>
             )

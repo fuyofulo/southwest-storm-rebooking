@@ -1,4 +1,4 @@
-import { day, time, usd, when } from './format.js'
+import { day, initials, stamp, time, usd, when } from './format.js'
 import { Status } from './List.jsx'
 import { Check } from './icons.jsx'
 
@@ -100,8 +100,10 @@ function Context({ ctx }) {
 export function Detail({ s, agreed, onAgree, needsAgreement, busy, error, onConfirm }) {
   const isSplit = s.suggestion_status === 'split_party_confirm'
   const isNone = s.suggestion_status === 'no_option_found'
+  const done = s.confirmation
   const flights = s.suggestion?.flights || []
-  const failed = s.checklist.filter((c) => !c.passed)
+  const checklist = s.checklist || []
+  const failed = checklist.filter((c) => !c.passed)
   const ctx = s.agent_context || {}
   const checks = (s.agent_checks || []).map((c) => c.replace(/^Make-up not stated: confirm /, '').replace(/ \(no child.*$/, ''))
 
@@ -125,10 +127,10 @@ export function Detail({ s, agreed, onAgree, needsAgreement, busy, error, onConf
 
         {isSplit && (
           <div className={`note split${needsAgreement && !agreed ? ' attention' : ''}`}>
-            <strong>The family must agree before you confirm.</strong>
+            <strong>{done ? 'Split party, confirmed with the family.' : 'The family must agree before you confirm.'}</strong>
             <p>
               No flight has {s.party_size} seats side by side, so the party flies on {flights.length} different flights, each group seated
-              together. If they say no, escalate.
+              together.{done ? '' : ' If they say no, escalate.'}
             </p>
           </div>
         )}
@@ -136,7 +138,11 @@ export function Detail({ s, agreed, onAgree, needsAgreement, busy, error, onConf
           <div className="note none">
             <strong>No flight met the rules.</strong>
             <p>{sentence(s.message?.replace(/^No flight met the rules[:.]?\s*/, ''))}</p>
-            <p className="faint">Handle it by hand or escalate, then confirm to record that and clear it from the list.</p>
+            <p className="faint">
+              {done
+                ? 'Recorded as handled by hand or escalated.'
+                : 'Handle it by hand or escalate, then confirm to record that and clear it from the list.'}
+            </p>
           </div>
         )}
 
@@ -171,27 +177,47 @@ export function Detail({ s, agreed, onAgree, needsAgreement, busy, error, onConf
           </section>
         )}
 
-        <details className="checks">
-          <summary>
-            <span className={failed.length ? 'bad' : 'good'}>{failed.length ? '✕' : <Check />}</span>
-            {failed.length
-              ? `${failed.length} rule check(s) failed`
-              : s.suggestion
-                ? `All ${s.checklist.length} rule checks passed`
-                : `${s.checklist.length} routing checks passed · no flight passed the flight rules`}
-          </summary>
-          <ul>
-            {s.checklist.map((c) => (
-              <li key={c.rule} className={c.passed ? '' : 'bad'}>
-                <span className="mono">{c.rule}</span>
-                <span>{c.detail}</span>
-              </li>
-            ))}
-          </ul>
-        </details>
+        {checklist.length > 0 && (
+          <details className="checks">
+            <summary>
+              <span className={failed.length ? 'bad' : 'good'}>{failed.length ? '✕' : <Check />}</span>
+              {failed.length
+                ? `${failed.length} rule check(s) failed`
+                : s.suggestion
+                  ? `All ${checklist.length} rule checks passed`
+                  : `${checklist.length} routing checks passed · no flight passed the flight rules`}
+            </summary>
+            <ul>
+              {checklist.map((c) => (
+                <li key={c.rule} className={c.passed ? '' : 'bad'}>
+                  <span className="mono">{c.rule}</span>
+                  <span>{c.detail}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
       </div>
 
-      <footer className="detail-foot">
+      {done ? (
+        <footer className="detail-foot">
+          <div className="done-card">
+            <span className="avatar">{initials(done.confirmed_by)}</span>
+            <div>
+              <div className="done-title">Confirmed by {done.confirmed_by}</div>
+              <div className="faint small">
+                {stamp(done.confirmed_at)}
+                {done.flight_nos?.length ? ` · ${done.flight_nos.join(' + ')}` : ' · handled by hand'}
+              </div>
+            </div>
+            <span className="done-check" aria-hidden="true">
+              <Check />
+            </span>
+          </div>
+          <p className="foot-note">Recorded only. The flight is booked in Southwest's system.</p>
+        </footer>
+      ) : (
+        <footer className="detail-foot">
         {isSplit && (
           <label className={`agree${agreed ? ' is-on' : ''}${needsAgreement && !agreed ? ' attention' : ''}`}>
             <input type="checkbox" checked={agreed} onChange={(e) => onAgree(e.target.checked)} />
@@ -218,7 +244,8 @@ export function Detail({ s, agreed, onAgree, needsAgreement, busy, error, onConf
           )}
         </button>
         <p className="foot-note">Records your decision only. Book the flight in Southwest's system.</p>
-      </footer>
+        </footer>
+      )}
     </aside>
   )
 }

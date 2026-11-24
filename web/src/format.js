@@ -33,6 +33,21 @@ export function short(ts) {
   return `${p.day} ${p.month} ${p.time}`
 }
 
+/** When an agent confirmed (a real UTC timestamp), in the viewer's own time: "25 Nov 14:32" */
+export function stamp(iso) {
+  const d = iso ? new Date(iso) : null
+  if (!d || Number.isNaN(d.getTime())) return '—'
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${hh}:${mm}`
+}
+
+export function initials(name) {
+  const words = (name || '').trim().split(/\s+/).filter(Boolean)
+  if (!words.length) return '?'
+  return (words[0][0] + (words.length > 1 ? words[words.length - 1][0] : '')).toUpperCase()
+}
+
 export function usd(value) {
   const n = Number(value)
   return Number.isFinite(n) ? `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'

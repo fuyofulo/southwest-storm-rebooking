@@ -99,7 +99,7 @@ The agent works one list of every booking still waiting, newest `cancellation_ti
 - the model's one-line reason, or the code's reason if it fell back
 - for information only, not enforced by code: `onward_connection_flight_no`, each flight's `weather_risk_flag`, and the agent note
 
-**Confirm records the agent's decision** (who, when, which suggestion) against the booking, and the booking leaves the waiting list. **It does not book a flight**; the booking is made in Southwest's own systems. A `no_option_found` booking can be confirmed too, once the agent has handled it by hand or escalated it.
+**Confirm records the agent's decision** (who, when, which suggestion) against the booking, and the booking leaves the waiting list. **It does not book a flight**; the booking is made in Southwest's own systems. A `no_option_found` booking can be confirmed too, once the agent has handled it by hand or escalated it. Confirmed bookings stay visible under a separate **Confirmed** filter, most recent first, showing the suggestion as it was confirmed and who confirmed it and when; they can't be confirmed twice.
 
 **On confirm:**
 1. Check again that the seats are still open. If they aren't, don't confirm. Refresh the suggestion.

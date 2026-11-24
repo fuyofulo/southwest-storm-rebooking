@@ -43,7 +43,7 @@ Without the Supabase values the service reads `data/*.csv` and keeps confirmatio
 
 ## The agent page
 
-One quiet screen, no second page or tab, in light or dark (follows the system; the sun/moon button switches). A top bar with the agent's name, a sub-bar with a `suggestion_status` filter (All / Ready / Split / No option), "Booking 5 of 140" arrows and a search box, and a status bar with keyboard hints.
+One quiet screen, no second page or tab, in light or dark (follows the system; the sun/moon button switches). A top bar with the agent's name, a sub-bar with a filter (Waiting / Ready / Split / No option, and Confirmed), "Booking 5 of 140" arrows and a search box, and a status bar with keyboard hints.
 
 The list holds every booking still waiting, newest `cancellation_time` first. Each row shows `lead_passenger_name` with `booking_id` under it, `party_size`, `origin_airport` → `destination_airport`, `earliest_acceptable_departure`, the one suggestion, its `suggestion_status` and a Confirm button. Clicking a row opens it beside the list with:
 
@@ -58,7 +58,7 @@ The list holds every booking still waiting, newest `cancellation_time` first. Ea
 | `split_party_confirm` | Party split into side-by-side groups on different flights. Party of 4, best block 3: three including the lead on that flight, the fourth on another valid flight | Needs the "family agreed" tick first. If the make-up isn't stated, the tick also confirms the separate passenger is an adult |
 | `no_option_found` | No flight met the rules; the panel says why | Records that the agent handled it by hand or escalated it |
 
-After Confirm the row leaves the list and the next booking opens. If the service is down, the page says so and offers Try again; it never spins forever.
+After Confirm the row leaves the waiting list, moves to **Confirmed**, and the next booking opens. The Confirmed filter lists every booking already confirmed, most recent first, with who confirmed it and when; opening one shows the suggestion as it was confirmed. If the service is down, the page says so and offers Try again; it never spins forever.
 
 | Key | Does |
 |---|---|
@@ -89,6 +89,7 @@ After Confirm the row leaves the list and the next booking opens. If the service
 | Endpoint | What |
 |---|---|
 | `GET /suggestions` | Every booking still waiting, newest `cancellation_time` first, each with one suggestion |
+| `GET /confirmations` | Bookings already confirmed, most recent first: the suggestion as the agent saw it, plus `confirmation` (`confirmed_by`, `confirmed_at`, `suggestion_status`, `option_id`, `flight_nos`) |
 | `GET /suggestions/{booking_id}` | One booking, waiting or confirmed (with its `confirmation`) |
 | `POST /bookings/{booking_id}/confirm` | Body `{"confirmed_by": "Rosalind Mkhize", "option_id": "OPT-1"}`. Records who, when and which suggestion in the Supabase `confirmations` table; the booking leaves the waiting list. 409 if already confirmed or the suggestion changed. It does not book a flight |
 

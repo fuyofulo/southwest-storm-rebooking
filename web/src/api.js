@@ -43,6 +43,10 @@ export function fetchWaiting() {
   return call('/suggestions', { timeout: LIST_TIMEOUT_MS })
 }
 
+export function fetchConfirmed() {
+  return call('/confirmations', { timeout: CONFIRM_TIMEOUT_MS })
+}
+
 export function confirmBooking(bookingId, confirmedBy, optionId) {
   return call(`/bookings/${encodeURIComponent(bookingId)}/confirm`, {
     method: 'POST',
