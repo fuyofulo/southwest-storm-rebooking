@@ -74,7 +74,7 @@ def split_notes(b: Booking, option: Option) -> list[str]:
             together = ", ".join(p.label for p in seg.together)
             apart = ", ".join(p.label for p in seg.apart)
             notes.append(
-                f"{seg.flight.flight_no}: party of {b.party_size} from {b.booking_id} on one flight, seated apart: "
-                f"{together} side by side; {apart} elsewhere on the flight."
+                f"{seg.flight.flight_no}: party of {b.party_size} from {b.booking_id} on one flight, not all side by side. "
+                f"Adjacent block: {together}. Elsewhere on the flight: {apart}."
             )
     return notes
