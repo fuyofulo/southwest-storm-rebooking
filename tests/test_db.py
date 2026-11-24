@@ -112,6 +112,7 @@ def test_supabase_repo_records_confirmations_once():
     assert repo.confirmed_ids() == set() and repo.confirmation("BKG-1") is None
     assert repo.add_confirmation(record)["confirmed_by"] == "R. Mkhize"
     assert repo.confirmed_ids() == {"BKG-1"} and repo.confirmation("BKG-1")["option_id"] == "OPT-1"
+    assert [r["booking_id"] for r in repo.confirmations()] == ["BKG-1"]
     with pytest.raises(AlreadyConfirmed):
         repo.add_confirmation(record)
     assert repo.clear_confirmations() == 1 and repo.confirmed_ids() == set()

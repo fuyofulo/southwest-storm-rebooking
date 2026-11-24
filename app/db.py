@@ -56,6 +56,7 @@ class Repo(Protocol):
     def party(self, booking: Booking) -> Party: ...
     def confirmed_ids(self) -> set[str]: ...
     def confirmation(self, booking_id: str) -> dict | None: ...
+    def confirmations(self) -> list[dict]: ...
     def add_confirmation(self, record: dict) -> dict: ...  # raises AlreadyConfirmed
     def clear_confirmations(self) -> int: ...
 
@@ -87,6 +88,9 @@ class InMemoryRepo:
 
     def confirmation(self, booking_id: str) -> dict | None:
         return self._confirmations.get(booking_id)
+
+    def confirmations(self) -> list[dict]:
+        return list(self._confirmations.values())
 
     def add_confirmation(self, record: dict) -> dict:
         with self._lock:
@@ -150,6 +154,9 @@ class SupabaseRepo:
     def confirmation(self, booking_id: str) -> dict | None:
         rows = self._all("confirmations", booking_id=booking_id)
         return rows[0] if rows else None
+
+    def confirmations(self) -> list[dict]:
+        return self._all("confirmations")
 
     def add_confirmation(self, record: dict) -> dict:
         try:

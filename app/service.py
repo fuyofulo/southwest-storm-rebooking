@@ -31,6 +31,7 @@ from .rules import REVENUE_MANAGEMENT, all_passed, check_option, route
 log = logging.getLogger("rebooking")
 
 READY, SPLIT, NONE = "ready_to_confirm", "split_party_confirm", "no_option_found"
+CONFIRMATION_FIELDS = ("booking_id", "confirmed_by", "confirmed_at", "suggestion_status", "option_id", "flight_nos")
 SUGGESTION_STATUSES = (READY, SPLIT, NONE)
 
 
@@ -82,6 +83,21 @@ class RebookingService:
         todo = [b for b in self.repo.bookings() if b.booking_id not in done]
         todo.sort(key=lambda b: (b.cancellation_time, b.booking_id), reverse=True)
         return self._run(todo, request_date, use_ai)
+
+    def confirmed(self) -> list[dict]:
+        """Bookings an agent has confirmed, most recent first.
+
+        Each is the suggestion exactly as the agent saw it when confirming (the stored snapshot, so it doesn't
+        change if seats move later), plus `confirmation`: who confirmed it, when, and which suggestion.
+        """
+        out = []
+        for r in self.repo.confirmations():
+            item = dict(r.get("suggestion") or {"booking_id": r["booking_id"]})
+            item.setdefault("checklist", [])
+            item["confirmation"] = {k: r.get(k) for k in CONFIRMATION_FIELDS}
+            out.append(item)
+        out.sort(key=lambda s: (s["confirmation"]["confirmed_at"] or "", s["booking_id"]), reverse=True)
+        return out
 
     def confirm(self, booking_id: str, confirmed_by: str, request_date: date, option_id: str | None = None) -> dict | None:
         """Record the agent's decision against the booking. None if the booking doesn't exist.

@@ -91,6 +91,22 @@ def test_confirm_records_who_when_and_which_suggestion_and_leaves_the_waiting_li
     assert service.suggest("BKG-MID", REQ, use_ai=False)["confirmation"]["confirmed_by"] == "Rosalind Mkhize"
 
 
+def test_confirmed_list_is_most_recent_first_with_who_when_and_what_the_agent_saw():
+    service = svc(three_bookings(), [make_flight(flight_no="WN5001")])
+    assert service.confirmed() == []
+    service.confirm("BKG-OLD", "Rosalind Mkhize", REQ)
+    service.repo._confirmations["BKG-OLD"]["confirmed_at"] = "2026-11-18T09:00:00+00:00"  # earlier than the next one
+    service.confirm("BKG-NEW", "Sam Ortiz", REQ, option_id="OPT-1")
+    done = service.confirmed()
+    assert [s["booking_id"] for s in done] == ["BKG-NEW", "BKG-OLD"]
+    first = done[0]
+    assert first["confirmation"]["confirmed_by"] == "Sam Ortiz" and first["confirmation"]["flight_nos"] == ["WN5001"]
+    assert first["suggestion_status"] == "ready_to_confirm" and first["suggestion"]["flights"][0]["flight_no"] == "WN5001"
+    assert first["lead_passenger_name"] and first["checklist"] == []
+    # Confirmed and waiting never overlap.
+    assert {s["booking_id"] for s in service.waiting(REQ, use_ai=False)} == {"BKG-MID"}
+
+
 def test_confirm_twice_is_refused():
     service = svc(three_bookings(), [make_flight()])
     service.confirm("BKG-NEW", "R. Mkhize", REQ)

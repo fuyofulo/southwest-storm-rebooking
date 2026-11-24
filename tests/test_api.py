@@ -52,6 +52,16 @@ def test_confirm_records_and_removes_from_the_waiting_list(client):
     assert client.get("/suggestions/BKG-1").json()["confirmation"]["option_id"] == "OPT-1"
 
 
+def test_confirmations_lists_what_was_confirmed(client):
+    assert client.get("/confirmations").json() == []
+    client.post("/bookings/BKG-2/confirm", json={"confirmed_by": "Rosalind Mkhize"})
+    body = client.get("/confirmations").json()
+    assert [s["booking_id"] for s in body] == ["BKG-2"]
+    assert body[0]["suggestion_status"] == "no_option_found" and body[0]["confirmation"]["confirmed_by"] == "Rosalind Mkhize"
+    assert body[0]["confirmation"]["confirmed_at"]
+    assert [s["booking_id"] for s in client.get("/suggestions").json()] == ["BKG-1"]
+
+
 def test_confirm_errors(client):
     assert client.post("/bookings/NOPE/confirm", json={"confirmed_by": "R"}).status_code == 404
     assert client.post("/bookings/BKG-1/confirm", json={"confirmed_by": "  "}).status_code == 422

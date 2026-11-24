@@ -2,6 +2,7 @@
 
     uvicorn app.main:app --reload
     GET  /suggestions                      bookings still waiting, newest cancellation first
+    GET  /confirmations                    bookings already confirmed, most recent first
     GET  /suggestions/BKG-10003            one booking (waiting or confirmed)
     POST /bookings/BKG-10003/confirm       record the agent's confirmation (does not book a flight)
 """
@@ -64,6 +65,13 @@ def list_suggestions(
 ) -> list[dict]:
     """Every booking still waiting for an agent, newest cancellation_time first, each with one suggestion."""
     return service.waiting(resolve_request_date(get_settings(), request_date), use_ai)
+
+
+@app.get("/confirmations")
+def list_confirmations(service: RebookingService = Depends(get_service)) -> list[dict]:
+    """Bookings an agent has already confirmed, most recent first: the suggestion as the agent saw it,
+    plus `confirmation` (confirmed_by, confirmed_at, suggestion_status, option_id, flight_nos)."""
+    return service.confirmed()
 
 
 @app.get("/suggestions/{booking_id}")
