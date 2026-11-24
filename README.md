@@ -1,131 +1,59 @@
-# Denver Storm Rebooking Helper
+# Denver Storm Rebooking
 
-Prototype of an agent page and rebooking service that suggests one valid rebooking per itinerary cancelled by the November 2026 Denver snowstorm. Contact center agents open each booking, check the suggestion and click Confirm. The goal is under 7 minutes per itinerary, down from about 14, without breaking a single waiver rule.
+One screen for the contact-center agents rebooking the itineraries the November 2026 Denver snowstorm cancelled. Every booking arrives with one suggested flight that code has checked against the storm waiver rules. The agent reads it, clicks Confirm, and the next booking opens. The goal is under 7 minutes per itinerary, down from about 14.
 
-- **Minutes readout:** [one-page readout (Google Doc)](https://docs.google.com/document/d/1rbDkRzf2yGuapAuQeSoYcntC3FZvU6SkmkLMvhFvoAc/edit?usp=drivesdk)
-- **Rules:** [`REBOOKING_SPEC.md`](REBOOKING_SPEC.md) is the spec the suggestions are built against (the acceptance criteria call it SPEC.md).
-- [`PROMPT_NOTES.md`](PROMPT_NOTES.md): the prompt used to write the spec, plus notes.
+**Minutes readout:** [one-page readout (Google Doc)](https://docs.google.com/document/d/1rbDkRzf2yGuapAuQeSoYcntC3FZvU6SkmkLMvhFvoAc/edit?usp=drivesdk) · **Rules:** [REBOOKING_SPEC.md](REBOOKING_SPEC.md), the SPEC.md the acceptance criteria refer to
 
-The assistant only suggests. **Confirm records the agent's decision; it never books a flight.** The booking is made in Southwest's own systems.
+## Open, check, confirm
 
-## Run it locally
+![The agent opens F. Oyelaran's booking, reads the suggested flight WN1078 and the model's reason, clicks Confirm, and the next booking opens](docs/readme/1-open-and-confirm.gif)
 
-Needs Python 3.11+ and Node.js 20+.
+Every booking still waiting is one row, newest cancellation first, with its one suggestion and its `suggestion_status`. Opening a booking puts the flight, the open seats, the fare result and the model's one-line reason beside the list. Confirm records the decision and opens the next booking. It never books the flight; that still happens in Southwest's system.
 
-```bash
-./run.sh app
-```
+## The family of four
 
-That starts the rebooking service on http://127.0.0.1:8000 and the agent page on **http://localhost:5173** (Ctrl+C stops both). The first run creates `.venv`, installs the Python and page dependencies, and creates `.env` from `.env.example`.
+![The Nkemelu party of four: the note says the family must agree, three passengers including the lead are on WN1046, the fourth is on WN1020, the agent ticks that the family agreed, confirms, and the booking appears under Confirmed](docs/readme/2-family-of-four.gif)
 
-| Command | What it does |
-|---|---|
-| `./run.sh` | Tests, create the Supabase tables and load both CSVs, the family-of-four demo, and the summary over the real data |
-| `./run.sh app` | Service and page together |
-| `./run.sh serve` | Only the service (API docs at http://127.0.0.1:8000/docs) |
-| `./run.sh page` | Only the page (the service must be running) |
-| `./run.sh reset` | Clear every agent confirmation, so all bookings are waiting again |
+No flight has four seats side by side, so the party is split. The lead passenger and two others sit together on WN1046, and the fourth flies on WN1020, a different flight that passes the same rules. The page says the family must agree, and Confirm stays off until the agent ticks that they did.
 
-## Environment values (`.env`)
+![BKG-10023 under Confirmed, labelled split_party_confirm: three passengers on WN1046 at 07:20 on Thu 19 Nov, one on WN1020 at 14:50 on Wed 18 Nov, confirmed by the agent](docs/readme/3-family-of-four-confirmed.jpg)
 
-Names only. `.env` is git-ignored; [`.env.example`](.env.example) lists them with empty values.
+<sub>BKG-10023 (A. Nkemelu, DEN → HOU), confirmed and labelled `split_party_confirm`. Recorded on the real data by a scripted browser signed in as "Demo Agent", so the times on screen are seconds, not an agent's. The free model's daily limit was used up, so this split shows the code's reason.</sub>
 
-| Name | What |
-|---|---|
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role (secret) key. Server side only, never sent to the page |
-| `SUPABASE_DB_URL` | Optional Postgres connection string, so `./run.sh` can create the tables itself (needs `psql`) |
-| `OPENROUTER_API_KEY` | OpenRouter key for the model call |
-| `OPENROUTER_MODEL` | OpenRouter model id. Empty = `nvidia/nemotron-3-ultra-550b-a55b:free` |
-| `REQUEST_DATE` | Date the rebooking request is made (check R1). `.env.example` uses 2026-11-18 |
+## No flight met the rules
 
-Without the Supabase values the service reads `data/*.csv` and keeps confirmations in memory only.
+![B. Nakamura's party of three: the page says no flight met the rules and why, and Confirm records that the agent handled it by hand](docs/readme/4-no-option-found.jpg)
 
-## The agent page
+A `no_option_found` booking still opens, says why in plain words and keeps the agent note in view. Confirm records that the agent handled it by hand or escalated it, so every row can be decided without leaving the page.
 
-One quiet screen, no second page or tab, in light or dark (follows the system; the sun/moon button switches). A top bar with the agent's name, a sub-bar with a filter (Waiting / Ready / Split / No option, and Confirmed), "Booking 5 of 140" arrows and a search box, and a status bar with keyboard hints.
+<sub>2 of the 140 bookings: BKG-10035 and BKG-10064.</sub>
 
-The list holds every booking still waiting, newest `cancellation_time` first. Each row shows `lead_passenger_name` with `booking_id` under it, `party_size`, `origin_airport` → `destination_airport`, `earliest_acceptable_departure`, the one suggestion, its `suggestion_status` and a Confirm button. Clicking a row opens it beside the list with:
+## Timed from open to Confirm
 
-- each suggested flight's `flight_no`, `departure_datetime`, `open_seats_total`, `open_seats_adjacent_max` and `flight_status`, and who sits on it, with the lead passenger named;
-- `waiver_eligible`, the fare result and the original fare;
-- the model's one-line reason, or a plain note that the code chose because the model did not answer;
-- the agent note, onward connection and bags, plus the rule checklist (collapsed).
+The page times each booking from the moment the agent first opens it to the click on Confirm, and stores the seconds with the confirmation. The status bar shows the average against the 7-minute goal, and the Confirmed filter lists every booking with who confirmed it, when, and how long it took. It is the same clock the acceptance run uses, written down per itinerary as it happens.
 
-| `suggestion_status` | Meaning | Confirm |
-|---|---|---|
-| `ready_to_confirm` | Whole party side by side on one flight | One click |
-| `split_party_confirm` | Party split into side-by-side groups on different flights. Party of 4, best block 3: three including the lead on that flight, the fourth on another valid flight | Needs the "family agreed" tick first. If the make-up isn't stated, the tick also confirms the separate passenger is an adult |
-| `no_option_found` | No flight met the rules; the panel says why | Records that the agent handled it by hand or escalated it |
+## How it works
 
-After Confirm the row leaves the waiting list, moves to **Confirmed**, and the next booking opens. The Confirmed filter lists every booking already confirmed, most recent first, with who confirmed it and when; opening one shows the suggestion as it was confirmed. If the service is down, the page says so and offers Try again; it never spins forever.
+1. Code runs the routing checks and the flight rules from the spec: departure at or after `earliest_acceptable_departure`, not cancelled, enough open seats, and the storm waiver only where `waiver_eligible` is true. What's left is a short list of valid options, either the whole party together or side-by-side groups on different flights. ([rules.py](app/rules.py), [options.py](app/options.py))
+2. A free OpenRouter model picks one option by its ID and writes a one-line reason. It answers in JSON and has no way to add a flight. ([ai.py](app/ai.py))
+3. Code re-checks the pick against every rule. If the reply is malformed or the pick fails a rule, the code's best option is used and the page says so. ([service.py](app/service.py))
+4. Confirm writes who, when, which flights and the seconds taken to the Supabase `confirmations` table. Nothing is booked. ([main.py](app/main.py))
 
-| Key | Does |
-|---|---|
-| `j` / `k` (or ↓ / ↑) | Next / previous booking |
-| `a` | Tick "the family agreed" on a split |
-| `⌘↵` (Ctrl+Enter) | Confirm the open booking |
-| `/` | Search by name, booking, route or flight (Esc clears) |
-| `r` | Refresh the list |
+A split keeps the lead passenger's group the largest and every child with an adult, and never puts more people on a flight than it has open seats.
 
-**Screenshot: the family of four's suggestion, `split_party_confirm`, confirmed**
+## On the real data
 
-> _Placeholder: add the screenshot here (for example `docs/split_party_confirm.png`)._
-
-## How a suggestion is made
-
-| Step | Who | What |
-|---|---|---|
-| 1 | code | Routing checks R1–R4 ([`app/rules.py`](app/rules.py)). Revenue Management cases get `no_option_found` with the reason. |
-| 2 | code | Valid options: the flight filter, then together options, or split-party options on different flights that keep every child with an adult ([`app/options.py`](app/options.py)). |
-| 3 | AI | The model, called live through OpenRouter, picks **one** option by ID and writes a one-line reason. It answers in JSON and has no way to add a flight ([`app/ai.py`](app/ai.py)). |
-| 4 | code | The pick is re-checked against every rule. A malformed, unknown or failing pick falls back to the best option by code, is logged, and the page says so ([`app/service.py`](app/service.py)). |
-| 5 | code | Fare result, `STORM WAIVER DEN NOV26` documentation line, split notes ([`app/fares.py`](app/fares.py)). |
-
-**Free model limits.** A free OpenRouter key allows about 50 free-model requests a day; the full list needs about 138. Each model reply is stored in `.cache/ai_replies.json`, keyed by the exact prompt, including the flights and open seats, and reused, so each booking is asked once. Once the daily limit is hit, uncached rows show the code's choice and say why. Adding 10 OpenRouter credits raises the limit to 1,000 a day.
-
-## API
-
-| Endpoint | What |
-|---|---|
-| `GET /suggestions` | Every booking still waiting, newest `cancellation_time` first, each with one suggestion |
-| `GET /confirmations` | Bookings already confirmed, most recent first: the suggestion as the agent saw it, plus `confirmation` (`confirmed_by`, `confirmed_at`, `suggestion_status`, `option_id`, `flight_nos`) |
-| `GET /suggestions/{booking_id}` | One booking, waiting or confirmed (with its `confirmation`) |
-| `POST /bookings/{booking_id}/confirm` | Body `{"confirmed_by": "Rosalind Mkhize", "option_id": "OPT-1"}`. Records who, when and which suggestion in the Supabase `confirmations` table; the booking leaves the waiting list. 409 if already confirmed or the suggestion changed. It does not book a flight |
-
-`GET` endpoints take `request_date` and `use_ai`. Each suggestion includes `suggestion_status`, `suggestion.flights[]`, `path` (`waiver`, `non_covered`, `revenue_management`), `waiver_eligible`, `fare`, `checklist`, `ai` (model, reason, whether code fell back and why), `family_must_agree`, `agent_checks`, `documentation_lines`, `split_notes` and `agent_context`.
-
-## Repo layout
-
-```
-run.sh         the one command
-app/           the rebooking service (FastAPI)
-  rules.py     routing checks, flight filter, final re-check -> checklist
-  options.py   together options and split-party options
-  ai.py        OpenRouter call, reply cache, strict parsing of the model's pick
-  service.py   the five steps, waiting list, confirm
-  fares.py     fare result, documentation lines, split notes
-  party.py     who is an adult / child / lap infant (from agent_note + travels_with_infant)
-  db.py        Supabase (or the CSVs), confirmations
-  main.py      endpoints
-web/           the agent page (React + Vite)
-db/schema.sql  tables: bookings, passengers, flights, confirmations
-scripts/       seed.py (Supabase), demo_family.py, run_summary.py
-data/          the two scenario CSVs
-tests/         unit tests, family-of-four case, confirm, no_option_found, end-to-end run
-```
-
-## Results on the real data (request date 2026-11-18)
+All 140 cancelled bookings, request date 18 Nov 2026:
 
 | `suggestion_status` | Bookings |
-|---|---|
+| --- | --- |
 | `ready_to_confirm` | 96 |
-| `split_party_confirm` | 42 (21 where the agent also confirms the separate group is adults) |
-| `no_option_found` | 2 (no way to seat the party in side-by-side groups on different flights) |
+| `split_party_confirm` | 42, of which 21 also ask the agent to confirm the separate group is adults |
+| `no_option_found` | 2 |
 
-All 7 parties of 4 whose best flight has 3 seats side by side come out as `split_party_confirm`: three including the lead on that flight, the fourth on a different one. No child is left without an adult, no flight gets more people than its open seats, and every suggestion passes every check (`tests/test_end_to_end.py`). Six non-covered bookings get a suggestion with the fare difference quoted.
+Every suggestion passes every rule check ([test_end_to_end.py](tests/test_end_to_end.py)). All 7 parties of four whose best flight has three seats side by side come out as three plus one on two different flights. The six bookings the waiver doesn't cover keep their original fare rules: four are quoted the difference to collect, two owe nothing.
 
-## Claude Code instruction for the page
+## Built with Claude Code
 
 The key instruction given to Claude Code for the page:
 
@@ -133,12 +61,62 @@ The key instruction given to Claude Code for the page:
 
 ## Changes to the AI's output
 
-- Rejected Claude Code's first split rule. It seated the family of four's fourth member elsewhere on the same three-block flight, which fails the split-party criterion. It was rewritten so the fourth passenger goes on a different valid flight (`tests/test_family_of_four.py`).
-- Fixed a Claude Code bug found while testing the page. Once OpenRouter's daily limit was hit, cached model replies were ignored and rows fell back to code text instead of the model's reason.
+- **Rejected** Claude Code's first split rule. It kept the family of four's fourth passenger on the three-seat flight, seated apart from the others, which the split party rule fails. The fourth passenger now goes on a different valid flight ([test_family_of_four.py](tests/test_family_of_four.py)).
+- **Changed** the list, which cut off the Confirm column on screens narrower than about 1290px, so an agent on a laptop had to scroll sideways to confirm. The booking id now sits under the name, and every column fits down to 1084px.
+
+## Run it
+
+Needs Python 3.11+ and Node.js 20+.
+
+```bash
+./run.sh app     # rebooking service on :8000, agent page on http://localhost:5173
+```
+
+The first run creates `.venv`, installs everything and copies `.env.example` to `.env`. The other modes:
+
+```bash
+./run.sh         # tests, load both CSVs into Supabase, the family-of-four demo, the summary
+./run.sh serve   # service only, API docs at http://127.0.0.1:8000/docs
+./run.sh page    # page only (the service must be running)
+./run.sh reset   # clear every confirmation, so all bookings are waiting again
+```
+
+The values `.env` needs, by name only (`.env` is git-ignored):
+
+| Name | What |
+| --- | --- |
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role key, used server side only |
+| `SUPABASE_DB_URL` | Optional Postgres URL, so `./run.sh` can create the tables (needs `psql`) |
+| `OPENROUTER_API_KEY` | OpenRouter key |
+| `OPENROUTER_MODEL` | OpenRouter model id. Empty means `nvidia/nemotron-3-ultra-550b-a55b:free` |
+| `REQUEST_DATE` | Date the rebooking is requested, `2026-11-18` in `.env.example` |
+
+Without the Supabase values the service reads `data/*.csv` and keeps confirmations in memory.
 
 ## Known limits
 
-- Direct flights only. Connections would need a minimum connection time.
-- Party make-up comes from free-text agent notes. When it isn't stated, a split relies on the agent confirming the separate group is adults (see the spec's open questions).
-- Onward connections, weather risk and agent-note requests (e.g. "Land before 9pm local") are shown to the agent and the model, not enforced by code.
-- On a free OpenRouter key, bookings beyond the daily allowance show the code's choice until a later run asks the model.
+- A free OpenRouter key allows about 50 model calls a day, and the list needs 138. Each reply is cached, so a booking is asked once; until then its row shows the code's choice and says so. Adding $10 of OpenRouter credit raises the limit to 1,000 a day.
+- Party make-up comes from free-text agent notes. When it isn't stated, ticking "the family agreed" also confirms the separate passenger is an adult.
+- Direct flights only.
+- Onward connections, weather risk and requests in the notes are shown to the agent and the model, not enforced by code.
+
+## Code
+
+```
+app/      rebooking service (FastAPI): rules, options, ai, service, fares, party, db, main
+web/      agent page (React + Vite)
+db/       schema.sql: bookings, passengers, flights, confirmations
+scripts/  seed, the family-of-four demo, the summary over the real data
+tests/    rules, the family of four, confirm, no_option_found, the full run
+```
+
+API: `GET /suggestions`, `GET /confirmations`, `GET /suggestions/{booking_id}` and `POST /bookings/{booking_id}/confirm`.
+
+---
+
+**More.** The rules and their open questions: [REBOOKING_SPEC.md](REBOOKING_SPEC.md). The prompt behind the spec: [PROMPT_NOTES.md](PROMPT_NOTES.md).
+
+Python, FastAPI, Supabase, React and Vite. The model runs on OpenRouter, `nvidia/nemotron-3-ultra-550b-a55b:free` by default.
+
+Built by [@fuyofulo](https://github.com/fuyofulo).
