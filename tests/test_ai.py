@@ -3,9 +3,14 @@ import json
 import logging
 from dataclasses import replace
 from datetime import date
+from types import SimpleNamespace
+
+import httpx
+import pytest
+from openai import BadRequestError
 
 from app import service as service_module
-from app.ai import AIPicker, parse_pick
+from app.ai import AIPicker, CachedComplete, openrouter_complete, parse_pick
 from app.db import InMemoryRepo
 from app.options import OptionSet
 from app.service import RebookingService
@@ -142,3 +147,81 @@ def test_no_api_key_means_code_choice_without_error():
     s = RebookingService(InMemoryRepo([b], [make_flight()]), picker=None).suggest("BKG-1", REQ)
     assert s["status"] == "suggested" and s["ai"]["used_fallback"]
     assert "not configured" in s["ai"]["fallback_reason"]
+
+
+# ---- OpenRouter call details (fake client, no network)
+
+PICK = '{"option_id": "OPT-1", "reason": "Earliest."}'
+
+
+class FakeCompletions:
+    def __init__(self, error_text=None):
+        self.calls, self.error_text = [], error_text
+
+    def create(self, **kw):
+        self.calls.append(kw)
+        if self.error_text and "extra_body" in kw:
+            response = httpx.Response(400, request=httpx.Request("POST", "https://openrouter.ai"))
+            raise BadRequestError(self.error_text, response=response, body=None)
+        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=PICK))])
+
+
+def fake_client(error_text=None):
+    return SimpleNamespace(chat=SimpleNamespace(completions=FakeCompletions(error_text)))
+
+
+def test_reasoning_is_switched_off():
+    client = fake_client()
+    assert openrouter_complete("k", "m", client=client)("sys", "user") == PICK
+    assert client.chat.completions.calls[0]["extra_body"] == {"reasoning": {"enabled": False}}
+
+
+def test_model_that_requires_reasoning_is_retried_with_it_on():
+    client = fake_client("Reasoning is mandatory for this endpoint and cannot be disabled.")
+    complete = openrouter_complete("k", "m", client=client)
+    assert complete("sys", "user") == PICK
+    assert complete("sys", "user") == PICK
+    calls = client.chat.completions.calls
+    assert ["extra_body" in c for c in calls] == [True, False, False]  # remembers after the first refusal
+
+
+def test_other_bad_requests_are_not_swallowed():
+    with pytest.raises(BadRequestError):
+        openrouter_complete("k", "m", client=fake_client("model not found"))("sys", "user")
+
+
+def test_cache_serves_repeat_prompts_without_calling_the_model(tmp_path):
+    calls = []
+
+    def complete(system, user):
+        calls.append(user)
+        return PICK if user != "bad" else "no json"
+
+    cached = CachedComplete(complete, "m", tmp_path / "cache.json")
+    assert cached("s", "u1") == PICK and cached("s", "u1") == PICK
+    assert calls == ["u1"]
+    # a fresh instance reads the file
+    assert CachedComplete(complete, "m", tmp_path / "cache.json")("s", "u1") == PICK
+    assert calls == ["u1"]
+    # bad replies are not kept
+    cached("s", "bad")
+    cached("s", "bad")
+    assert calls.count("bad") == 2
+
+
+def test_daily_free_limit_stops_further_calls_for_today(caplog):
+    calls = []
+
+    def capped(system, user):
+        calls.append(1)
+        raise RuntimeError("Rate limit exceeded: free-models-per-day")
+
+    b = make_booking(booking_id="BKG-1")
+    repo = InMemoryRepo([b, replace(b, booking_id="BKG-2"), replace(b, booking_id="BKG-3")], [make_flight()])
+    picker = AIPicker(capped, "m")
+    with caplog.at_level(logging.WARNING, logger="rebooking"):
+        out = RebookingService(repo, picker, max_workers=1).suggest_all(REQ)
+    assert len(calls) == 1 and picker.daily_limit_hit
+    assert all(s["status"] == "suggested" and s["ai"]["used_fallback"] for s in out)
+    assert all("daily free-model limit" in s["ai"]["fallback_reason"] for s in out)
+    assert len(caplog.records) == 1  # one warning, not one per booking

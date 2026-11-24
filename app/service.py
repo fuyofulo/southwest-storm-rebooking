@@ -47,7 +47,7 @@ def _code_reason(option: Option) -> str:
 
 
 class RebookingService:
-    def __init__(self, repo: Repo, picker: AIPicker | None = None, max_workers: int = 8):
+    def __init__(self, repo: Repo, picker: AIPicker | None = None, max_workers: int = 4):
         self.repo = repo
         self.picker = picker
         self.max_workers = max_workers
@@ -164,8 +164,9 @@ class RebookingService:
                 failed = "; ".join(c.rule for c in checks if not c.passed)
                 why = f"AI pick {pick.option_id} failed re-check: {failed}"
             else:
-                why = f"AI pick unusable: {pick.error}"
-            log.warning("%s: %s. Falling back to the best option by code.", b.booking_id, why)
+                why = pick.error if pick.skipped else f"AI pick unusable: {pick.error}"
+            if not pick.skipped:  # skipped = daily limit, already logged once by the picker
+                log.warning("%s: %s. Falling back to the best option by code.", b.booking_id, why)
             model = self.picker.model
         else:
             why = "AI not used (use_ai=false)" if not use_ai else "AI not configured (OPENROUTER_API_KEY not set)"

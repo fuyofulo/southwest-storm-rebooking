@@ -6,13 +6,20 @@ falls back to code. The model never sees a way to add or change flights.
 """
 from __future__ import annotations
 
+import hashlib
 import json
+import logging
 import re
+import threading
 from dataclasses import dataclass
+from datetime import date
+from pathlib import Path
 from typing import Callable
 
-from .config import OPENROUTER_BASE_URL
+from .config import OPENROUTER_BASE_URL, Settings
 from .models import Booking, Option, Party
+
+log = logging.getLogger("rebooking")
 
 SYSTEM_PROMPT = """You help a Southwest Airlines contact-center agent rebook a customer whose flight was cancelled by the Denver snowstorm.
 Code has already applied every waiver and seating rule and built the list of valid options. Your only job is to pick ONE option from that list and tell the agent why in one line.
@@ -31,6 +38,7 @@ class AIPick:
     reason: str | None
     error: str | None = None  # set when the pick can't be used
     raw: str | None = None
+    skipped: bool = False  # the model wasn't called (daily limit already hit); nothing new to log
 
 
 def build_prompt(b: Booking, party: Party, path: str, options: tuple[Option, ...]) -> str:
@@ -95,28 +103,103 @@ class AIPicker:
     def __init__(self, complete: Complete, model: str):
         self.complete = complete
         self.model = model
+        self._daily_limit_hit_on: date | None = None
+        self._lock = threading.Lock()
+
+    @property
+    def daily_limit_hit(self) -> bool:
+        return self._daily_limit_hit_on == date.today()
 
     def pick(self, b: Booking, party: Party, path: str, options: tuple[Option, ...]) -> AIPick:
+        if self.daily_limit_hit:
+            return AIPick(None, None, "OpenRouter daily free-model limit reached; not calling the model", skipped=True)
         try:
             raw = self.complete(SYSTEM_PROMPT, build_prompt(b, party, path, options))
         except Exception as exc:  # network, auth, rate limit, ...
-            return AIPick(None, None, f"model call failed: {type(exc).__name__}: {exc}")
+            text = str(exc)
+            if "per-day" in text or "per day" in text:
+                with self._lock:  # parallel workers can hit the limit together; warn once
+                    first = not self.daily_limit_hit
+                    self._daily_limit_hit_on = date.today()
+                if first:
+                    log.warning(
+                        "OpenRouter daily free-model limit reached: using the code choice for the rest of today. "
+                        "Cached replies are still used. (OpenRouter: add 10 credits for 1,000 free requests/day.)"
+                    )
+                return AIPick(None, None, "OpenRouter daily free-model limit reached; not calling the model", skipped=True)
+            return AIPick(None, None, f"model call failed: {type(exc).__name__}: {text[:200]}")
         return parse_pick(raw, [o.option_id for o in options])
 
 
-def openrouter_complete(api_key: str, model: str, timeout: float = 30.0) -> Complete:
-    """OpenRouter through its OpenAI-compatible API."""
-    from openai import OpenAI
+def openrouter_complete(api_key: str, model: str, timeout: float = 60.0, client=None) -> Complete:
+    """OpenRouter through its OpenAI-compatible API.
 
-    client = OpenAI(base_url=OPENROUTER_BASE_URL, api_key=api_key, timeout=timeout, max_retries=1)
+    Picking an option is a small task, so reasoning is switched off: free reasoning
+    models otherwise spend the whole token budget thinking and return no answer.
+    Models that can't switch it off are retried once with it on.
+    """
+    from openai import BadRequestError, OpenAI
+
+    client = client or OpenAI(base_url=OPENROUTER_BASE_URL, api_key=api_key, timeout=timeout, max_retries=3)
+    state = {"reasoning_off": True}
 
     def complete(system: str, user: str) -> str:
-        resp = client.chat.completions.create(
+        kwargs = dict(
             model=model,
             temperature=0,
-            max_tokens=200,
+            max_tokens=1500,
             messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
         )
+        if state["reasoning_off"]:
+            try:
+                resp = client.chat.completions.create(**kwargs, extra_body={"reasoning": {"enabled": False}})
+                return resp.choices[0].message.content or ""
+            except BadRequestError as exc:
+                if "reasoning" not in str(exc).lower():
+                    raise
+                state["reasoning_off"] = False
+        resp = client.chat.completions.create(**kwargs)
         return resp.choices[0].message.content or ""
 
     return complete
+
+
+class CachedComplete:
+    """Keeps model replies on disk, keyed by model + prompt, so re-runs don't spend free-tier quota.
+
+    The prompt holds the flights and open seats, so any change in inventory is a new key.
+    Only replies that look like a pick are kept; a bad reply is asked again next time.
+    """
+
+    def __init__(self, complete: Complete, model: str, path: Path):
+        self.complete, self.model, self.path = complete, model, path
+        self.hits = self.live_calls = 0
+        self._lock = threading.Lock()
+        try:
+            self._cache: dict[str, str] = json.loads(path.read_text())
+        except (FileNotFoundError, json.JSONDecodeError):
+            self._cache = {}
+
+    def __call__(self, system: str, user: str) -> str:
+        key = hashlib.sha256(f"{self.model}\n{system}\n{user}".encode()).hexdigest()
+        with self._lock:
+            if key in self._cache:
+                self.hits += 1
+                return self._cache[key]
+            self.live_calls += 1
+        raw = self.complete(system, user)
+        if '"option_id"' in raw:
+            with self._lock:
+                self._cache[key] = raw
+                self.path.parent.mkdir(parents=True, exist_ok=True)
+                self.path.write_text(json.dumps(self._cache, indent=1))
+        return raw
+
+
+def make_picker(settings: Settings) -> AIPicker | None:
+    """The picker the app and scripts use: OpenRouter, with the reply cache. None without a key."""
+    if not settings.openrouter_api_key:
+        return None
+    complete = openrouter_complete(settings.openrouter_api_key, settings.openrouter_model)
+    cached = CachedComplete(complete, settings.openrouter_model, settings.cache_dir / "ai_replies.json")
+    return AIPicker(cached, settings.openrouter_model)

@@ -54,3 +54,6 @@ create table if not exists flights (
 );
 
 create index if not exists flights_route_departure on flights (origin_airport, destination_airport, departure_datetime);
+
+-- Tell Supabase's REST API to pick up the new tables right away (harmless elsewhere).
+notify pgrst, 'reload schema';

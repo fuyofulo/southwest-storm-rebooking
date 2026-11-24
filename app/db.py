@@ -117,5 +117,5 @@ class SupabaseRepo:
 def get_repo(settings: Settings) -> Repo:
     if settings.use_supabase:
         return SupabaseRepo(settings.supabase_url, settings.supabase_service_role_key)
-    log.warning("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set: reading the CSVs in %s", settings.data_dir)
+    log.info("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set: reading the CSVs in %s", settings.data_dir)
     return CsvRepo(settings.data_dir)

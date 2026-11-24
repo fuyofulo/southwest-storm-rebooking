@@ -12,7 +12,7 @@ from functools import lru_cache
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 
-from .ai import AIPicker, openrouter_complete
+from .ai import make_picker
 from .config import get_settings, resolve_request_date
 from .db import get_repo
 from .service import RebookingService
@@ -30,11 +30,8 @@ app = FastAPI(
 @lru_cache
 def get_service() -> RebookingService:
     settings = get_settings()
-    picker = None
-    if settings.openrouter_api_key:
-        complete = openrouter_complete(settings.openrouter_api_key, settings.openrouter_model)
-        picker = AIPicker(complete, settings.openrouter_model)
-    else:
+    picker = make_picker(settings)
+    if picker is None:
         log.warning("OPENROUTER_API_KEY not set: suggestions use the code choice and code reason")
     return RebookingService(get_repo(settings), picker)
 

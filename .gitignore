@@ -9,3 +9,6 @@ __pycache__/
 
 # claude code worktrees
 .claude/
+
+# cached model replies
+.cache/

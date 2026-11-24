@@ -13,7 +13,7 @@ import argparse
 import logging
 from datetime import date
 
-from app.ai import AIPicker, openrouter_complete
+from app.ai import CachedComplete, make_picker
 from app.config import get_settings
 from app.db import get_repo
 from app.render import format_suggestion
@@ -32,9 +32,7 @@ def main() -> int:
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
     settings = get_settings()
     repo = get_repo(settings)
-    picker = None
-    if settings.openrouter_api_key and not args.no_ai:
-        picker = AIPicker(openrouter_complete(settings.openrouter_api_key, settings.openrouter_model), settings.openrouter_model)
+    picker = None if args.no_ai else make_picker(settings)
 
     results = RebookingService(repo, picker).suggest_all(args.request_date, use_ai=picker is not None)
 
@@ -48,6 +46,16 @@ def main() -> int:
     print(format_summary(summary))
     for problem in summary["child_without_adult_problems"]:
         print("  PROBLEM:", problem)
+    if picker is not None:
+        if isinstance(picker.complete, CachedComplete):
+            c = picker.complete
+            print(f"\nModel replies: {c.live_calls} live calls to OpenRouter, {c.hits} reused from .cache/ai_replies.json")
+        if picker.daily_limit_hit:
+            print(
+                "OpenRouter's free daily limit was reached, so the remaining bookings used the code choice "
+                "(still fully rule-checked).\nRe-run tomorrow to fill them in (cached replies are kept), "
+                "or add 10 OpenRouter credits for 1,000 free requests/day."
+            )
     return 0 if summary["all_suggestions_pass_every_check"] and not summary["child_without_adult_problems"] else 1
 
 

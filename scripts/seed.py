@@ -1,19 +1,23 @@
-"""Load both CSVs into Supabase.
+"""Create the tables (optional) and load both CSVs into Supabase.
 
-Usage (after running db/schema.sql in the Supabase SQL editor):
     python -m scripts.seed
 
-Re-running is safe: rows are upserted on their primary keys.
+- If SUPABASE_DB_URL is set, db/schema.sql is applied first with psql.
+  Otherwise run db/schema.sql once in the Supabase SQL editor.
+- Needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.
+Re-running is safe: the schema uses IF NOT EXISTS and rows are upserted.
 """
 from __future__ import annotations
 
 import logging
+import shutil
+import subprocess
 import sys
 from dataclasses import asdict
 from datetime import datetime
 from decimal import Decimal
 
-from app.config import get_settings
+from app.config import ROOT, get_settings
 from app.db import load_bookings_csv, load_flights_csv
 from app.party import derive_party, party_to_rows
 
@@ -38,25 +42,53 @@ def build_rows(data_dir):
     return booking_rows, flight_rows, passenger_rows
 
 
+def apply_schema(db_url: str) -> bool:
+    psql = shutil.which("psql")
+    if not psql:
+        print("psql not found: run db/schema.sql in the Supabase SQL editor instead.", file=sys.stderr)
+        return False
+    result = subprocess.run(
+        [psql, db_url, "-q", "-v", "ON_ERROR_STOP=1", "-f", str(ROOT / "db" / "schema.sql")],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        print("Could not apply db/schema.sql:\n" + result.stderr.strip(), file=sys.stderr)
+        return False
+    print("Tables ready (db/schema.sql applied).")
+    return True
+
+
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     settings = get_settings()
     if not settings.use_supabase:
         print("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env first.", file=sys.stderr)
         return 1
+    if settings.supabase_db_url and not apply_schema(settings.supabase_db_url):
+        return 1
 
     from supabase import create_client
 
     client = create_client(settings.supabase_url, settings.supabase_service_role_key)
     booking_rows, flight_rows, passenger_rows = build_rows(settings.data_dir)
+    try:
+        client.table("bookings").upsert(booking_rows, on_conflict="booking_id").execute()
+        client.table("flights").upsert(flight_rows, on_conflict="flight_no").execute()
+        ids = [r["booking_id"] for r in booking_rows]
+        client.table("passengers").delete().in_("booking_id", ids).execute()  # party make-up may have changed
+        client.table("passengers").insert(passenger_rows).execute()
+    except Exception as exc:
+        if "PGRST205" in str(exc) or "Could not find the table" in str(exc):
+            print(
+                "The tables don't exist yet. Run db/schema.sql in the Supabase SQL editor, "
+                "or set SUPABASE_DB_URL in .env so this script creates them.",
+                file=sys.stderr,
+            )
+            return 1
+        raise
 
-    client.table("bookings").upsert(booking_rows, on_conflict="booking_id").execute()
-    client.table("flights").upsert(flight_rows, on_conflict="flight_no").execute()
-    ids = [r["booking_id"] for r in booking_rows]
-    client.table("passengers").delete().in_("booking_id", ids).execute()  # party make-up may have changed
-    client.table("passengers").insert(passenger_rows).execute()
-
-    print(f"Seeded {len(booking_rows)} bookings, {len(passenger_rows)} passengers, {len(flight_rows)} flights.")
+    counts = {t: client.table(t).select("*", count="exact").limit(1).execute().count for t in ("bookings", "flights", "passengers")}
+    print(f"Seeded Supabase: {counts['bookings']} bookings, {counts['flights']} flights, {counts['passengers']} passengers.")
     return 0
 
 

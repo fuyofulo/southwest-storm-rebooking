@@ -5,6 +5,54 @@ Prototype of a helper that suggests one valid rebooking per itinerary cancelled 
 - [`REBOOKING_SPEC.md`](REBOOKING_SPEC.md): the rules (routing checks, flight filter, party seating, fare treatment, agent confirmation), the source of truth for the code
 - [`PROMPT_NOTES.md`](PROMPT_NOTES.md): the prompt used to write the spec, plus notes
 
+## Quick start: one command
+
+```bash
+./run.sh
+```
+
+The first run creates `.venv`, installs the requirements and creates `.env` from `.env.example`. Every run then:
+
+1. runs the unit tests (offline),
+2. creates the Supabase tables and loads both CSVs, if Supabase is set in `.env` (otherwise the service reads the CSVs),
+3. runs the family-of-four demo: 2 adults + 2 children, the only valid flight has 3 seats together. It prints the suggestion and, child by child, which adult they sit with,
+4. runs every booking in the real data (request date 2026-11-18) and prints the summary.
+
+To try the API afterwards: `./run.sh serve`, then open http://127.0.0.1:8000/docs.
+
+Needs Python 3.11+ (developed on 3.15). Without any keys it still runs end to end: the model step falls back to the code choice and says so.
+
+## Settings (`.env`)
+
+`.env` is git-ignored; never commit it. [`.env.example`](.env.example) lists every setting.
+
+| Setting | What |
+|---|---|
+| `OPENROUTER_API_KEY` | OpenRouter key. Without it, every suggestion uses the code choice. |
+| `OPENROUTER_MODEL` | Any OpenRouter model ID. Empty = `nvidia/nemotron-3-ultra-550b-a55b:free` (free). |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase project. Server-side only. Without them the service reads `data/*.csv`. |
+| `SUPABASE_DB_URL` | Optional Postgres connection string. Lets `./run.sh` create the tables itself (needs `psql`). |
+| `REQUEST_DATE` | Date the rebooking request is made, for check R1. Empty = today. `.env.example` sets 2026-11-18, because after 23 Nov 2026 every booking goes to Revenue Management. `?request_date=` on the API overrides it. |
+
+### Free model limits
+
+A free OpenRouter key gets a small daily allowance of free-model requests (about 50; OpenRouter's limit error says 10 credits unlock 1,000 a day). One full run needs about 118 (one per booking with a suggestion). So:
+
+- Model replies are cached in `.cache/ai_replies.json`, keyed by model and the exact prompt (which includes the flights and open seats). Re-runs reuse them and spend nothing.
+- When the daily limit is hit, the service logs it once and uses the code choice for the rest of the day. Every suggestion is still fully rule-checked. The run summary shows how many picks came from the model.
+- Reasoning is switched off in the request. Free reasoning models otherwise spend the whole token budget thinking and return no answer.
+
+### Connecting Supabase
+
+1. Create a project at [supabase.com](https://supabase.com) (the free plan is enough).
+2. Put three values in `.env`:
+   - `SUPABASE_URL`: Project Settings → API → Project URL
+   - `SUPABASE_SERVICE_ROLE_KEY`: Project Settings → API Keys → `service_role` (or a secret key, `sb_secret_...`)
+   - `SUPABASE_DB_URL`: the **Connect** button → Session pooler connection string, with your database password filled in
+3. Run `./run.sh`. Step 2 creates the tables from [`db/schema.sql`](db/schema.sql) and loads 140 bookings, 153 flights and 342 passenger rows, then reads the counts back.
+
+Without `SUPABASE_DB_URL`, paste `db/schema.sql` into the Supabase SQL editor once instead. The service then reads from Supabase automatically.
+
 ## How a suggestion is made
 
 | Step | Who | What |
@@ -15,72 +63,9 @@ Prototype of a helper that suggests one valid rebooking per itinerary cancelled 
 | 4 | code | The pick is re-checked against every rule. A malformed, unknown or failing pick falls back to the best option by code and is logged ([`app/service.py`](app/service.py)). |
 | 5 | code | Fare result, `STORM WAIVER DEN NOV26` documentation line, split notes ([`app/fares.py`](app/fares.py)). |
 
-## Repo layout
+## API
 
-```
-app/
-  config.py    settings from .env
-  models.py    Booking, Flight, Passenger, Party, Option, Check
-  party.py     who is an adult / child / lap infant (from agent_note + travels_with_infant)
-  rules.py     routing checks, flight filter, final re-check -> checklist
-  options.py   together options and safe splits
-  fares.py     fare result, documentation lines, split notes
-  ai.py        OpenRouter call and strict parsing of the model's pick
-  service.py   runs the five steps for each booking
-  summary.py   counts and safety checks over a batch
-  render.py    text view of one suggestion
-  db.py        Supabase reads (or the CSVs when Supabase isn't configured)
-  main.py      FastAPI endpoints
-db/schema.sql  tables: bookings, passengers, flights
-scripts/seed.py         load both CSVs into Supabase
-scripts/run_summary.py  end-to-end run over the real data
-data/          the two scenario CSVs
-tests/         unit tests, family-of-four demo, end-to-end run
-```
-
-## Setup
-
-Requires Python 3.11+ (developed on 3.15).
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env   # then fill it in
-```
-
-`.env` settings (never commit this file; `.env` is git-ignored):
-
-| Setting | What |
-|---|---|
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase project. Server-side only. If either is empty, the service reads the CSVs in `data/` instead. |
-| `OPENROUTER_API_KEY` | OpenRouter key. If empty, the service uses the code choice and says so in each response. |
-| `OPENROUTER_MODEL` | Any OpenRouter model ID. Default `anthropic/claude-sonnet-5.5`. |
-| `REQUEST_DATE` | Date the rebooking request is made, for check R1 (`YYYY-MM-DD`). Default today. After 23 Nov 2026 every booking goes to Revenue Management. |
-
-### Supabase
-
-1. Create a project, open the SQL editor, and run [`db/schema.sql`](db/schema.sql).
-2. Load the data:
-
-   ```bash
-   python -m scripts.seed
-   ```
-
-   Loads 140 bookings, 153 flights and 342 passenger rows. The truncated flight row WN1154 is skipped with a warning. Re-running is safe.
-
-## Run
-
-**API**
-
-```bash
-uvicorn app.main:app --reload
-# interactive docs: http://127.0.0.1:8000/docs
-curl "http://127.0.0.1:8000/suggestions?request_date=2026-11-18"
-curl "http://127.0.0.1:8000/suggestions/BKG-10018?request_date=2026-11-18"
-```
-
-Both endpoints take `request_date` (overrides `REQUEST_DATE`) and `use_ai` (`false` skips the model). Each response includes:
+`GET /suggestions` (every booking) and `GET /suggestions/{booking_id}`. Both take `request_date` and `use_ai` (`false` skips the model). Each response includes:
 
 - `suggestion.flights[]`: flight, times, status, weather risk, `seated_together` (the adjacent block) and `seated_apart`
 - `path`: `waiver`, `non_covered` or `revenue_management`
@@ -91,23 +76,32 @@ Both endpoints take `request_date` (overrides `REQUEST_DATE`) and `use_ai` (`fal
 - `family_must_agree`: true for every split
 - `documentation_lines`, `split_notes`, `agent_context` (agent note, onward connection, bags, wheelchair, ...)
 
-**Tests**
+## Repo layout
 
-```bash
-pytest                                   # everything (no network needed)
-pytest -s tests/test_family_of_four.py   # demo: 2 adults + 2 children, only 3 seats together
-pytest -s tests/test_end_to_end.py       # summary over the real data
+```
+run.sh         the one command
+app/
+  config.py    settings from .env
+  models.py    Booking, Flight, Passenger, Party, Option, Check
+  party.py     who is an adult / child / lap infant (from agent_note + travels_with_infant)
+  rules.py     routing checks, flight filter, final re-check -> checklist
+  options.py   together options and safe splits
+  fares.py     fare result, documentation lines, split notes
+  ai.py        OpenRouter call, reply cache, strict parsing of the model's pick
+  service.py   runs the five steps for each booking
+  summary.py   counts and safety checks over a batch
+  render.py    text view of one suggestion
+  db.py        Supabase reads (or the CSVs when Supabase isn't configured)
+  main.py      FastAPI endpoints
+db/schema.sql  tables: bookings, passengers, flights
+scripts/       seed.py (Supabase), demo_family.py, run_summary.py
+data/          the two scenario CSVs
+tests/         unit tests, family-of-four demo, end-to-end run
 ```
 
-**End-to-end summary over the real data**
+Individual steps, if you need them: `.venv/bin/python -m pytest`, `.venv/bin/python -m scripts.seed`, `.venv/bin/python -m scripts.demo_family`, `.venv/bin/python -m scripts.run_summary --show BKG-10018` (or `--no-ai`, `--show-splits`).
 
-```bash
-python -m scripts.run_summary                    # request date 2026-11-18; uses the model if OPENROUTER_API_KEY is set
-python -m scripts.run_summary --no-ai --show-splits
-python -m scripts.run_summary --show BKG-10018 BKG-10029
-```
-
-## Results on the real data (request date 2026-11-18, code choice)
+## Results on the real data (request date 2026-11-18)
 
 | | Bookings |
 |---|---|
@@ -125,4 +119,4 @@ python -m scripts.run_summary --show BKG-10018 BKG-10029
 - Party make-up comes from free-text agent notes. See the open questions in the spec.
 - Onward connections, weather risk and agent-note requests (e.g. "Land before 9pm local") are shown to the agent and the model, not enforced by code.
 - Some cross-flight splits put the two halves of a family on different days (e.g. BKG-10018). They meet the spec, and the family must agree first.
-- The live OpenRouter call is not covered by the test suite; tests use a stub model so they run offline.
+- The free model's daily limit means a key without credits covers roughly 50 bookings a day with model picks; the rest use the code choice until the cache fills.
