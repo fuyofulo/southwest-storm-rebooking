@@ -145,22 +145,22 @@ class Party:
 
 @dataclass(frozen=True)
 class Segment:
-    """One flight in an option and who sits on it."""
+    """One flight in an option and the group on it. The whole group sits in the flight's adjacent block."""
 
     flight: Flight
-    together: tuple[Passenger, ...]  # sit in the flight's adjacent block
-    apart: tuple[Passenger, ...] = ()  # other open seats on the same flight (adults only)
+    together: tuple[Passenger, ...]
 
     @property
     def people(self) -> tuple[Passenger, ...]:
-        return self.together + self.apart
+        return self.together
 
 
 @dataclass(frozen=True)
 class Option:
     option_id: str  # "OPT-1" ... ; the only thing the AI may return
     kind: str  # "together" | "split"
-    segments: tuple[Segment, ...]
+    segments: tuple[Segment, ...]  # a split: the lead passenger's group first, each group on its own flight
+    agent_checks: tuple[str, ...] = ()  # what the agent must confirm with the customer first
 
     @property
     def family_must_agree(self) -> bool:

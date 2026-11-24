@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import logging
+import threading
 from pathlib import Path
 from typing import Protocol
 
@@ -44,20 +45,30 @@ def load_flights_csv(data_dir: Path) -> list[Flight]:
     return [Flight.from_row(r) for r in read_csv_rows(data_dir / FLIGHTS_CSV)]
 
 
+class AlreadyConfirmed(Exception):
+    """An agent has already confirmed this booking."""
+
+
 class Repo(Protocol):
     def bookings(self) -> list[Booking]: ...
     def booking(self, booking_id: str) -> Booking | None: ...
     def flights(self) -> list[Flight]: ...
     def party(self, booking: Booking) -> Party: ...
+    def confirmed_ids(self) -> set[str]: ...
+    def confirmation(self, booking_id: str) -> dict | None: ...
+    def add_confirmation(self, record: dict) -> dict: ...  # raises AlreadyConfirmed
+    def clear_confirmations(self) -> int: ...
 
 
 class InMemoryRepo:
-    """Holds bookings and flights in memory. Used by tests and by CsvRepo."""
+    """Holds bookings, flights and confirmations in memory. Used by tests and by CsvRepo."""
 
     def __init__(self, bookings: list[Booking], flights: list[Flight], parties: dict[str, Party] | None = None):
         self._bookings = {b.booking_id: b for b in bookings}
         self._flights = list(flights)
         self._parties = parties or {}
+        self._confirmations: dict[str, dict] = {}
+        self._lock = threading.Lock()
 
     def bookings(self) -> list[Booking]:
         return list(self._bookings.values())
@@ -71,8 +82,28 @@ class InMemoryRepo:
     def party(self, booking: Booking) -> Party:
         return self._parties.get(booking.booking_id) or derive_party(booking)
 
+    def confirmed_ids(self) -> set[str]:
+        return set(self._confirmations)
+
+    def confirmation(self, booking_id: str) -> dict | None:
+        return self._confirmations.get(booking_id)
+
+    def add_confirmation(self, record: dict) -> dict:
+        with self._lock:
+            if record["booking_id"] in self._confirmations:
+                raise AlreadyConfirmed(record["booking_id"])
+            self._confirmations[record["booking_id"]] = record
+        return record
+
+    def clear_confirmations(self) -> int:
+        n = len(self._confirmations)
+        self._confirmations.clear()
+        return n
+
 
 class CsvRepo(InMemoryRepo):
+    """The CSVs, with confirmations kept in memory only (lost on restart). Supabase keeps them."""
+
     def __init__(self, data_dir: Path):
         super().__init__(load_bookings_csv(data_dir), load_flights_csv(data_dir))
 
@@ -112,6 +143,24 @@ class SupabaseRepo:
             log.warning("%s: %d passenger rows for party_size %d; re-deriving", booking.booking_id, len(rows), booking.party_size)
             return derive_party(booking)
         return party_from_rows(rows)
+
+    def confirmed_ids(self) -> set[str]:
+        return {r["booking_id"] for r in self.client.table("confirmations").select("booking_id").execute().data}
+
+    def confirmation(self, booking_id: str) -> dict | None:
+        rows = self._all("confirmations", booking_id=booking_id)
+        return rows[0] if rows else None
+
+    def add_confirmation(self, record: dict) -> dict:
+        try:
+            return self.client.table("confirmations").insert(record).execute().data[0]
+        except Exception as exc:  # postgrest APIError; 23505 = unique violation (already confirmed)
+            if "23505" in str(exc) or "duplicate key" in str(exc):
+                raise AlreadyConfirmed(record["booking_id"]) from exc
+            raise
+
+    def clear_confirmations(self) -> int:
+        return len(self.client.table("confirmations").delete().neq("booking_id", "").execute().data)
 
 
 def get_repo(settings: Settings) -> Repo:

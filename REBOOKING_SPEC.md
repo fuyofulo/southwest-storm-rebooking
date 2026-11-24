@@ -58,18 +58,20 @@ The order is: together first, a safe split second, and the family has the final 
 
 Any other hint ("Family of 4", or `travels_with_infant` with no count) means the make-up is **unknown**. Lap infants count as children for the adult rule.
 
-1. **Together:** the earliest valid flight (by departure time) whose adjacent block fits the whole party: `open_seats_adjacent_max` ≥ party size.
-2. **Safe split:** only if no valid flight seats the whole party together **and** the party's make-up is stated. A split can be on one flight (part of the party in the adjacent block, the rest elsewhere on the same plane) or across flights, so that:
-   - **every child travels with at least one adult**. Every child and lap infant sits in a flight's adjacent block next to at least one adult. Only adults sit apart, because we can't see where the other open seats are.
-   - the number of flights used is as small as possible.
-   - every flight used passes Section 2 (§3.5).
-3. If there's no way to split without leaving a child alone, make no suggestion and flag the booking for the agent. A party whose make-up is unknown gets together options only; if none fits, it gets no suggestion and is flagged so the agent can confirm who is a child.
+1. **Together** (`suggestion_status` = `ready_to_confirm`): the earliest valid flight (by departure time) whose adjacent block fits the whole party: `open_seats_adjacent_max` ≥ party size.
+2. **Split party** (`split_party_confirm`), only if no valid flight seats the whole party together. **Decision (acceptance criteria, Dec 2026 handoff):** the party is split into groups, and **each group sits side by side on its own, different flight**. Nobody is seated apart on the same plane, and no flight gets more people than its `open_seats_total`.
+   - The lead passenger's group is as large as the best flight allows. Example: a party of 4 whose best flight has `open_seats_adjacent_max` = 3. Three passengers including the lead sit together on that flight; the fourth goes on a different valid flight. Putting all four on the three-seat flight is never allowed.
+   - **Every child travels with at least one adult.** Every child and lap infant is in a group with an adult.
+   - The number of flights used is as small as possible. Among those, the plan where the whole party has left soonest comes first, then the plan whose flights are closest together in time.
+   - Every flight used passes Section 2: the same departure, status, seat and waiver-window rules (§3.5).
+   - **Decision:** a party whose make-up is unknown can be split too, but the agent must confirm with the family that everyone in a group without the lead passenger is an adult. The page shows this as a check next to Confirm.
+3. If there is no valid flight, or no way to split as above, there is no suggestion (`no_option_found`). The booking still opens and says plainly why no flight met the rules.
 
-Example: a family of four (two adults, two children) whose only valid flight has 5 open seats, 3 of them side by side. Both children and one adult take the block of 3; the other adult sits elsewhere on the same flight. That counts as a split.
+Example: a family of four (two adults, two children) whose best flight has 5 open seats, 3 of them side by side, and a later flight with 2 open seats. Both children and the lead adult take the block of 3; the other adult takes the later flight.
 
-A split is only a suggestion. **The agent must get the family's agreement before confirming it.** If the family says no, the agent can look at the next "together" option (for example, a later flight with enough seats) or escalate.
+A split is only a suggestion. **The agent must get the family's agreement before confirming it.** If the family says no, the agent escalates. A split is never confirmed automatically.
 
-**How the AI model fits in.** Code builds up to five valid options, best first (together options if any exist, otherwise safe splits). The model picks one by its ID and writes a one-line reason for the agent. It keeps the first option unless the booking context (agent note, onward connection, weather risk, wheelchair, bags) gives a concrete reason. Code re-checks the pick against every rule in this spec. If the pick is malformed, not in the list, or fails a check, code uses its own first option and logs why. The model never adds a flight or changes the seating.
+**How the AI model fits in.** Code builds up to five valid options, best first (together options if any exist, otherwise splits). The model, called live through OpenRouter, picks one by its ID and writes a one-line reason for the agent. It keeps the first option unless the booking context (agent note, onward connection, weather risk, wheelchair, bags) gives a concrete reason. Code re-checks the pick against every rule in this spec. If the pick is malformed, not in the list, or fails a check, code uses its own first option, says so on the page, and logs why. The model never adds a flight or changes the seating.
 
 ## 4. Fare treatment shown with the suggestion
 
@@ -88,13 +90,16 @@ A split is only a suggestion. **The agent must get the family's agreement before
 
 ## 5. What the agent sees and does
 
-For each booking in the queue, the agent sees:
-- the suggested flight or flights and how the party is seated (who is in the adjacent block, who sits apart)
-- which path the booking is on (waiver or non-covered) and the fare result: "no fare difference" or "collect $X"
+The agent works one list of every booking still waiting, newest `cancellation_time` first, on one screen. For each booking the agent sees:
+- the `suggestion_status`: `ready_to_confirm`, `split_party_confirm` or `no_option_found`
+- the suggested flight or flights: `flight_no`, `departure_datetime`, `open_seats_total`, `open_seats_adjacent_max`, and who sits on each (the lead passenger named)
+- `waiver_eligible`, which path the booking is on (waiver or non-covered) and the fare result: "no fare difference" or "collect $X"
 - a checklist showing that every rule above passed
 - for a split: a reminder to get the family's agreement first
 - the model's one-line reason, or the code's reason if it fell back
 - for information only, not enforced by code: `onward_connection_flight_no`, each flight's `weather_risk_flag`, and the agent note
+
+**Confirm records the agent's decision** (who, when, which suggestion) against the booking, and the booking leaves the waiting list. **It does not book a flight**; the booking is made in Southwest's own systems. A `no_option_found` booking can be confirmed too, once the agent has handled it by hand or escalated it.
 
 **On confirm:**
 1. Check again that the seats are still open. If they aren't, don't confirm. Refresh the suggestion.
@@ -105,7 +110,7 @@ For each booking in the queue, the agent sees:
 ## 6. Open questions for the customer
 
 Still open:
-- Which field says whether a passenger is a child? Until there is one, the helper works the make-up out from the agent note and `travels_with_infant` (Section 3) and never splits a party whose make-up is unknown.
+- Which field says whether a passenger is a child? Until there is one, the helper works the make-up out from the agent note and `travels_with_infant` (Section 3). When it is unknown, a split asks the agent to confirm that each group without the lead passenger is adults only.
 - Does a lap infant need its own seat, and is the infant counted in `party_size`? Until answered, every person in `party_size` gets a seat (Section 2, rule 5).
 - Is there a field for the date the request was made? Until there is, R1 uses the request date given to the helper (Section 1).
 - If connecting itineraries are added: what is the minimum connection time?

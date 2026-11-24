@@ -61,6 +61,7 @@ def build_prompt(b: Booking, party: Party, path: str, options: tuple[Option, ...
                 "option_id": o.option_id,
                 "kind": o.kind,
                 "family_must_agree": o.family_must_agree,
+                **({"agent_checks": list(o.agent_checks)} if o.agent_checks else {}),
                 "flights": [
                     {
                         "flight_no": s.flight.flight_no,
@@ -69,7 +70,9 @@ def build_prompt(b: Booking, party: Party, path: str, options: tuple[Option, ...
                         "status": s.flight.flight_status,
                         "weather_risk": s.flight.weather_risk_flag,
                         "seated_together": [p.label for p in s.together],
-                        "seated_apart": [p.label for p in s.apart],
+                        # Always empty now (nobody sits apart on the same flight). Kept so prompts for
+                        # together options stay byte-identical and earlier cached model replies stay valid.
+                        "seated_apart": [],
                     }
                     for s in o.segments
                 ],

@@ -44,7 +44,7 @@ def main() -> int:
             print(format_suggestion(s), end="\n\n")
     summary = summarize(results)
     print(format_summary(summary))
-    for problem in summary["child_without_adult_problems"]:
+    for problem in summary["safety_problems"]:
         print("  PROBLEM:", problem)
     if picker is not None:
         if isinstance(picker.complete, CachedComplete):
@@ -56,7 +56,7 @@ def main() -> int:
                 "(still fully rule-checked).\nRe-run tomorrow to fill them in (cached replies are kept), "
                 "or add 10 OpenRouter credits for 1,000 free requests/day."
             )
-    return 0 if summary["all_suggestions_pass_every_check"] and not summary["child_without_adult_problems"] else 1
+    return 0 if summary["all_suggestions_pass_every_check"] and not summary["safety_problems"] else 1
 
 
 if __name__ == "__main__":

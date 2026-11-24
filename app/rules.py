@@ -185,25 +185,29 @@ def check_option(
         )
     )
 
-    bad = []
-    for seg in option.segments:
-        no = seg.flight.flight_no
-        minors_apart = [p.label for p in seg.apart if not p.is_adult]
-        if minors_apart:
-            bad.append(f"{', '.join(minors_apart)} seated apart on {no}")
-        if any(p.is_minor for p in seg.together) and not any(p.is_adult for p in seg.together):
-            bad.append(f"no adult in the seated-together group on {no}")
+    bad = [
+        f"no adult in the group on {seg.flight.flight_no}"
+        for seg in option.segments
+        if any(p.is_minor for p in seg.together) and not any(p.is_adult for p in seg.together)
+    ]
     n_minors = sum(p.is_minor for p in party.passengers)
-    detail = "; ".join(bad) if bad else (
-        f"{n_minors} child/infant(s), each seated together with an adult" if n_minors else "no children or infants in party"
-    )
+    if bad:
+        detail = "; ".join(bad)
+    elif not party.make_up_known:
+        detail = f"make-up not stated ({party.source}); " + (
+            "the agent confirms every group without the lead passenger is adults only" if option.kind == "split"
+            else "the whole party sits together"
+        )
+    else:
+        detail = f"{n_minors} child/infant(s), each seated next to an adult" if n_minors else "no children or infants in party"
     checks.append(Check("P2 every child travels and sits with an adult (§3)", not bad, detail))
 
     if option.kind == "together":
         seg = option.segments[0]
-        ok = len(option.segments) == 1 and not seg.apart and fits_together(seg.flight, party.size)
+        ok = len(option.segments) == 1 and fits_together(seg.flight, party.size)
         checks.append(Check("P3 together: whole party in one adjacent block on one flight", ok, f"{len(seg.together)} side by side on {seg.flight.flight_no}"))
     else:
+        nos = [seg.flight.flight_no for seg in option.segments]
         checks.append(
             Check(
                 "P3 split only when no valid flight seats the whole party together",
@@ -213,15 +217,24 @@ def check_option(
         )
         checks.append(
             Check(
-                "P4 split only when the party's make-up is stated",
-                party.make_up_known,
-                party.source,
+                "P4 split: each group sits side by side on a different flight",
+                len(set(nos)) == len(nos) >= 2,
+                " + ".join(f"{len(seg.together)} on {seg.flight.flight_no}" for seg in option.segments),
+            )
+        )
+        lead = party.passengers[0]
+        checks.append(
+            Check(
+                "P5 the lead passenger is in the largest group, on the first flight",
+                lead in option.segments[0].together
+                and len(option.segments[0].together) == max(len(s.together) for s in option.segments),
+                f"{lead.label} with {len(option.segments[0].together) - 1} other(s) on {nos[0]}",
             )
         )
         if min_flights is not None:
             checks.append(
                 Check(
-                    "P5 split uses as few flights as possible",
+                    "P6 split uses as few flights as possible",
                     len(option.segments) == min_flights,
                     f"{len(option.segments)} flight(s), minimum possible {min_flights}",
                 )

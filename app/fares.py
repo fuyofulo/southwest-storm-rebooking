@@ -61,20 +61,9 @@ def split_notes(b: Booking, option: Option) -> list[str]:
     if option.kind != "split":
         return []
     nos = [seg.flight.flight_no for seg in option.segments]
-    notes = []
-    for seg in option.segments:
-        names = ", ".join(p.label for p in seg.people)
-        others = [no for no in nos if no != seg.flight.flight_no]
-        if others:
-            notes.append(
-                f"{seg.flight.flight_no}: party of {b.party_size} from {b.booking_id} split across {', '.join(nos)}. "
-                f"On this flight: {names}. Link to the new booking number(s) on {', '.join(others)}."
-            )
-        else:
-            together = ", ".join(p.label for p in seg.together)
-            apart = ", ".join(p.label for p in seg.apart)
-            notes.append(
-                f"{seg.flight.flight_no}: party of {b.party_size} from {b.booking_id} on one flight, not all side by side. "
-                f"Adjacent block: {together}. Elsewhere on the flight: {apart}."
-            )
-    return notes
+    return [
+        f"{seg.flight.flight_no}: party of {b.party_size} from {b.booking_id} split across {', '.join(nos)}. "
+        f"On this flight, side by side: {', '.join(p.label for p in seg.together)}. "
+        f"Link to the new booking number(s) on {', '.join(no for no in nos if no != seg.flight.flight_no)}."
+        for seg in option.segments
+    ]

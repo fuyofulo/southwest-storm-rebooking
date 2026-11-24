@@ -94,7 +94,7 @@ def test_invented_option_falls_back_to_code_and_logs(caplog):
     svc, flights = two_flight_service('{"option_id": "OPT-9", "reason": "Made up."}')
     with caplog.at_level(logging.WARNING, logger="rebooking"):
         s = svc.suggest("BKG-1", REQ)
-    assert s["status"] == "suggested"
+    assert s["suggestion_status"] == "ready_to_confirm"
     assert s["suggestion"]["option_id"] == "OPT-1"
     assert s["ai"]["used_fallback"] and "OPT-9" in s["ai"]["fallback_reason"]
     assert "BKG-1" in caplog.text and "Falling back" in caplog.text
@@ -116,22 +116,24 @@ def test_model_error_falls_back(caplog):
     svc = RebookingService(InMemoryRepo([b], [make_flight()]), AIPicker(boom, "fake"))
     with caplog.at_level(logging.WARNING, logger="rebooking"):
         s = svc.suggest("BKG-1", REQ)
-    assert s["status"] == "suggested" and s["ai"]["used_fallback"]
+    assert s["suggestion_status"] == "ready_to_confirm" and s["ai"]["used_fallback"]
     assert "TimeoutError" in s["ai"]["fallback_reason"]
 
 
 def test_pick_that_fails_recheck_falls_back_to_next_valid_option(monkeypatch, caplog):
-    # Force the option list to contain a bad OPT-1 (child seated apart) and a good OPT-2.
+    # Force the option list to contain a bad OPT-1 (a child alone on the second flight) and a good OPT-2.
     b = make_booking(booking_id="BKG-1", party_size=4)
     party = make_party(adults=2, children=2)
     f1 = make_flight("2026-11-18T08:00", open_seats_total=6, open_seats_adjacent_max=3)
     f2 = make_flight("2026-11-18T12:00", open_seats_total=6, open_seats_adjacent_max=3)
     good = service_module.build_options(b, party, [f1, f2])
-    seg = good.options[0].segments[0]
-    child = next(p for p in seg.together if p.is_minor)
-    bad_seg = replace(seg, together=tuple(seg.apart[0] if p == child else p for p in seg.together), apart=(child,))
-    bad = replace(good.options[0], segments=(bad_seg,))
-    monkeypatch.setattr(service_module, "build_options", lambda *a, **k: OptionSet((bad, good.options[1]), False, 1))
+    first, second = good.options[0].segments
+    child = next(p for p in first.together if p.is_minor)
+    bad = replace(good.options[0], segments=(
+        replace(first, together=tuple(second.together[0] if p == child else p for p in first.together)),
+        replace(second, together=(child,)),
+    ))
+    monkeypatch.setattr(service_module, "build_options", lambda *a, **k: OptionSet((bad, good.options[1]), False, 2))
 
     picker = AIPicker(lambda s, u: '{"option_id": "OPT-1", "reason": "Earliest."}', "fake")
     svc = RebookingService(InMemoryRepo([b], [f1, f2], {"BKG-1": party}), picker)
@@ -145,7 +147,7 @@ def test_pick_that_fails_recheck_falls_back_to_next_valid_option(monkeypatch, ca
 def test_no_api_key_means_code_choice_without_error():
     b = make_booking(booking_id="BKG-1")
     s = RebookingService(InMemoryRepo([b], [make_flight()]), picker=None).suggest("BKG-1", REQ)
-    assert s["status"] == "suggested" and s["ai"]["used_fallback"]
+    assert s["suggestion_status"] == "ready_to_confirm" and s["ai"]["used_fallback"]
     assert "not configured" in s["ai"]["fallback_reason"]
 
 
@@ -222,6 +224,6 @@ def test_daily_free_limit_stops_further_calls_for_today(caplog):
     with caplog.at_level(logging.WARNING, logger="rebooking"):
         out = RebookingService(repo, picker, max_workers=1).suggest_all(REQ)
     assert len(calls) == 1 and picker.daily_limit_hit
-    assert all(s["status"] == "suggested" and s["ai"]["used_fallback"] for s in out)
+    assert all(s["suggestion_status"] == "ready_to_confirm" and s["ai"]["used_fallback"] for s in out)
     assert all("daily free-model limit" in s["ai"]["fallback_reason"] for s in out)
     assert len(caplog.records) == 1  # one warning, not one per booking

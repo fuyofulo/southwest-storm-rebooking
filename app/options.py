@@ -1,15 +1,20 @@
 """Section 3: build the list of valid options the AI may choose from.
 
 1. Together: one valid flight whose adjacent block fits the whole party. Earliest first.
-2. Safe split, only if no together option exists and the party's make-up is stated:
-   the fewest flights, every child/infant in a flight's adjacent block with at least
-   one adult, and only adults in the other (non-adjacent) seats.
-3. Otherwise no options, with a reason, and the booking is flagged for the agent.
+2. Split party, only if no together option exists: the party is split into groups, each
+   group side by side in the adjacent block of its OWN valid flight (never more people on a
+   flight than its open seats, never part of the party seated apart on the same plane).
+   - the fewest flights possible;
+   - the lead passenger's group is as large as the best flight allows (a party of 4 whose
+     best flight has 3 seats together: the lead + 2 on that flight, the 4th on another one);
+   - every child/infant is in a group with an adult. When the make-up isn't stated, the
+     agent must confirm that every group without the lead passenger is adults only.
+3. Otherwise no options, with a reason.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
-from itertools import combinations
+from itertools import permutations
 
 from .models import Booking, Flight, Option, Party, Passenger, Segment
 from .rules import fits_together, valid_flights, why_no_flight
@@ -28,7 +33,7 @@ class OptionSet:
 def build_options(b: Booking, party: Party, flights: list[Flight], limit: int = MAX_OPTIONS) -> OptionSet:
     valid = valid_flights(b, flights)
     if not valid:
-        return OptionSet((), False, None, f"No suggestion: {why_no_flight(b, flights)}")
+        return OptionSet((), False, None, f"No flight met the rules. {why_no_flight(b, flights)}")
 
     together = [f for f in valid if fits_together(f, party.size)]
     if together:
@@ -37,84 +42,113 @@ def build_options(b: Booking, party: Party, flights: list[Flight], limit: int = 
         )
         return OptionSet(options, True, 1)
 
-    if not party.make_up_known:
-        return OptionSet(
-            (), False, None,
-            f"No suggestion, flagged for agent: no valid flight has {party.size} adjacent open seats, and the "
-            f"party's make-up is not stated ({party.source}), so a split can't be checked against the child rule. "
-            "Confirm who in the party is a child before splitting.",
-        )
-
     plans = find_splits(party, valid, limit)
     if not plans:
         seats = sum(f.open_seats_total for f in valid)
         if seats < party.size:
             why = f"only {seats} open seats across all {len(valid)} valid flights for a party of {party.size}"
+        elif party.size == 1:
+            why = "no valid flight has an open seat"
         else:
-            why = "every way to split the party would leave a child or infant without an adult (§3.3)"
-        return OptionSet((), False, None, f"No suggestion, flagged for agent: {why}.")
+            why = (
+                f"no valid flight seats all {party.size} side by side, and the {len(valid)} valid flight(s) can't take "
+                "the party in side-by-side groups on different flights"
+                + (" with every child next to an adult" if any(p.is_minor for p in party.passengers) else "")
+            )
+        return OptionSet((), False, None, f"No flight met the rules: {why}.")
 
-    options = tuple(Option(f"OPT-{i}", "split", segs) for i, segs in enumerate(plans, 1))
+    options = tuple(Option(f"OPT-{i}", "split", segs, _agent_checks(party, segs)) for i, segs in enumerate(plans, 1))
     return OptionSet(options, False, len(plans[0]))
 
 
-def _compositions(total: int, parts: int):
-    """All ways to write `total` as an ordered sum of `parts` non-negative integers."""
-    if parts == 1:
-        yield (total,)
-        return
-    for first in range(total + 1):
-        for rest in _compositions(total - first, parts - 1):
-            yield (first, *rest)
+def _agent_checks(party: Party, segments: tuple[Segment, ...]) -> tuple[str, ...]:
+    if party.make_up_known:
+        return ()
+    return tuple(
+        f"Make-up not stated: confirm {', '.join(p.label for p in seg.together)} on {seg.flight.flight_no} "
+        f"{'is an adult' if len(seg.together) == 1 else 'are all adults'} (no child may fly without an adult)."
+        for seg in segments[1:]
+    )
 
 
-def _seat(flights: tuple[Flight, ...], adults: list[Passenger], minors: list[Passenger]) -> tuple[Segment, ...] | None:
-    """Best safe seating of the party on exactly these flights (each used), or None."""
-    best = None
-    for ms in _compositions(len(minors), len(flights)):
-        for ads in _compositions(len(adults), len(flights)):
-            apart = 0
-            for f, m, a in zip(flights, ms, ads):
-                n = m + a
-                if n == 0 or n > f.open_seats_total:
-                    break
-                # minors sit in the adjacent block with at least one adult
-                if m and (a == 0 or m + 1 > f.open_seats_adjacent_max):
-                    break
-                apart += n - min(n, f.open_seats_adjacent_max)
-            else:
-                # fewest people seated apart, then more people on the earlier flight
-                key = (apart, tuple(-(m + a) for m, a in zip(ms, ads)))
-                if best is None or key < best[0]:
-                    best = (key, ms, ads)
-    if best is None:
-        return None
+def _group_sizes(n: int, k: int):
+    """Sizes for k groups: the lead's group first and largest (biggest first), the rest non-increasing."""
 
-    _, ms, ads = best
-    segments, mi, ai = [], 0, 0
-    for f, m, a in zip(flights, ms, ads):
-        seg_minors, seg_adults = minors[mi : mi + m], adults[ai : ai + a]
-        mi, ai = mi + m, ai + a
-        room = f.open_seats_adjacent_max - m  # block seats left for adults
-        segments.append(Segment(f, tuple(seg_adults[:room]) + tuple(seg_minors), tuple(seg_adults[room:])))
-    return tuple(segments)
+    def rest(total: int, parts: int, cap: int):
+        if parts == 0:
+            if total == 0:
+                yield ()
+            return
+        for size in range(min(cap, total - (parts - 1)), 0, -1):
+            for tail in rest(total - size, parts - 1, size):
+                yield (size, *tail)
+
+    for lead in range(n - (k - 1), 0, -1):
+        for tail in rest(n - lead, k - 1, lead):
+            yield (lead, *tail)
+
+
+def _fill(party: Party, sizes: tuple[int, ...]) -> list[tuple[Passenger, ...]] | None:
+    """Put people into groups of these sizes, the lead in group 1, every child with an adult. None if impossible."""
+    lead, *others = party.passengers
+    if not party.make_up_known:  # nothing to place by type; the agent confirms the other groups are adults
+        people = list(others)
+        groups = [(lead, *people[: sizes[0] - 1])]
+        people = people[sizes[0] - 1 :]
+        for size in sizes[1:]:
+            groups.append(tuple(people[:size]))
+            people = people[size:]
+        return groups
+
+    adults = [p for p in others if p.is_adult]
+    minors = [p for p in others if p.is_minor]
+    groups = []
+    for i, size in enumerate(sizes):
+        group = [lead] if i == 0 else []
+        if minors and not group:  # a group with children needs an adult first
+            if not adults:
+                return None
+            group.append(adults.pop(0))
+        while len(group) < size and minors and group:
+            group.append(minors.pop(0))
+        while len(group) < size and adults:
+            group.append(adults.pop(0))
+        if len(group) < size:  # only children left for a group with no adult
+            return None
+        groups.append(tuple(group))
+    return groups
 
 
 def find_splits(party: Party, valid: list[Flight], limit: int = MAX_OPTIONS) -> list[tuple[Segment, ...]]:
-    """Safe splits on the fewest flights, best first (earliest the whole party has left)."""
-    adults = [p for p in party.passengers if p.is_adult]
-    minors = [p for p in party.passengers if p.is_minor]
-    if sum(f.open_seats_total for f in valid) < party.size:
+    """Split plans on the fewest flights, the lead's group as large as possible, best first.
+
+    Best first = the whole party has left soonest, then the party's flights are closest together in time.
+    """
+    if party.size < 2 or sum(f.open_seats_total for f in valid) < party.size:
         return []
-    for k in range(1, min(party.size, len(valid)) + 1):
-        plans = [plan for combo in combinations(valid, k) if (plan := _seat(combo, adults, minors))]
+    for k in range(2, min(party.size, len(valid)) + 1):
+        plans = []
+        for sizes in _group_sizes(party.size, k):
+            groups = _fill(party, sizes)
+            if groups is None:
+                continue
+            for flights in permutations(valid, k):
+                if all(len(g) <= f.open_seats_adjacent_max for g, f in zip(groups, flights)):
+                    plans.append(tuple(Segment(f, g) for f, g in zip(flights, groups)))
         if plans:
-            plans.sort(
-                key=lambda segs: (
-                    max(s.flight.departure_datetime for s in segs),
-                    sum(len(s.apart) for s in segs),
-                    [s.flight.departure_datetime for s in segs],
-                )
-            )
-            return plans[:limit]
+            biggest = max(len(p[0].together) for p in plans)
+            plans = [p for p in plans if len(p[0].together) == biggest]
+            plans.sort(key=_rank)
+            unique, seen = [], set()
+            for p in plans:
+                key = frozenset((s.flight.flight_no, s.together) for s in p)
+                if key not in seen:
+                    seen.add(key)
+                    unique.append(p)
+            return unique[:limit]
     return []
+
+
+def _rank(segs: tuple[Segment, ...]):
+    deps = [s.flight.departure_datetime for s in segs]
+    return (max(deps), max(deps) - min(deps), deps[0], [s.flight.flight_no for s in segs])

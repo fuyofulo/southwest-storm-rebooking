@@ -2,6 +2,10 @@
 from __future__ import annotations
 
 
+def _when(ts: str) -> str:
+    return ts.replace("T", " ")
+
+
 def format_suggestion(s: dict) -> str:
     lines = []
     party = s.get("party")
@@ -10,8 +14,11 @@ def format_suggestion(s: dict) -> str:
         make_up = f" ({party['adults']} adults, {party['children']} children, {party['lap_infants']} lap infants)"
     elif party:
         make_up = " (make-up not stated)"
-    lines.append(f"{s['booking_id']}  {s['route']}  party of {s['party_size']}{make_up}")
-    lines.append(f"  path: {s['path']}    status: {s['status']}" + ("    FLAGGED FOR AGENT" if s["flagged_for_agent"] else ""))
+    lines.append(f"{s['booking_id']}  {s['lead_passenger_name']}  {s['route']}  party of {s['party_size']}{make_up}")
+    lines.append(
+        f"  suggestion_status: {s['suggestion_status']}    path: {s['path']}    waiver_eligible: {s['waiver_eligible']}    "
+        f"earliest acceptable: {_when(s['earliest_acceptable_departure'])}"
+    )
 
     sug = s.get("suggestion")
     if sug:
@@ -22,12 +29,12 @@ def format_suggestion(s: dict) -> str:
         for f in sug["flights"]:
             risk = ", weather risk" if f["weather_risk_flag"] else ""
             lines.append(
-                f"    {f['flight_no']}  dep {f['departure'].replace('T', ' ')}  arr {f['arrival'].replace('T', ' ')}  "
-                f"({f['flight_status']}{risk}; {f['open_seats_total']} open, largest block {f['open_seats_adjacent_max']})"
+                f"    {f['flight_no']}  departs {_when(f['departure_datetime'])}  arrives {_when(f['arrival_datetime'])}  "
+                f"({f['flight_status']}{risk}; {f['open_seats_total']} open, {f['open_seats_adjacent_max']} side by side)"
             )
-            lines.append(f"      seated together: {', '.join(f['seated_together'])}")
-            if f["seated_apart"]:
-                lines.append(f"      seated apart:    {', '.join(f['seated_apart'])}")
+            lines.append(f"      {f['passengers']} seated together: {', '.join(f['seated_together'])}")
+    for c in s.get("agent_checks", []):
+        lines.append(f"  AGENT CHECK: {c}")
     if s.get("fare"):
         lines.append(f"  fare: {s['fare']['result']}  ({s['fare']['detail']})")
     for d in s.get("documentation_lines", []):

@@ -2,7 +2,9 @@
 import logging
 
 from app.config import get_settings
-from app.db import SupabaseRepo, load_flights_csv
+import pytest
+
+from app.db import AlreadyConfirmed, SupabaseRepo, load_flights_csv
 from app.models import ADULT, CHILD
 from app.party import derive_party, party_to_rows
 from tests.fakes import make_booking
@@ -17,8 +19,8 @@ def test_truncated_flight_row_is_skipped_with_a_warning(caplog):
 
 
 class FakeQuery:
-    def __init__(self, rows, calls):
-        self.rows, self.calls = rows, calls
+    def __init__(self, table: list, calls):
+        self.table, self.rows, self.calls, self.op = table, list(table), calls, None
 
     def select(self, _):
         return self
@@ -27,19 +29,37 @@ class FakeQuery:
         self.rows = [r for r in self.rows if r[col] == val]
         return self
 
+    def neq(self, col, val):
+        self.rows = [r for r in self.rows if r[col] != val]
+        return self
+
+    def insert(self, row):
+        if any(r["booking_id"] == row["booking_id"] for r in self.table):
+            raise Exception("{'code': '23505', 'message': 'duplicate key value violates unique constraint'}")
+        self.op, self.rows = "insert", [row]
+        return self
+
+    def delete(self):
+        self.op = "delete"
+        return self
+
     def execute(self):
         self.calls.append(1)
+        if self.op == "insert":
+            self.table.extend(self.rows)
+        elif self.op == "delete":
+            self.table[:] = [r for r in self.table if r not in self.rows]
         return type("Resp", (), {"data": self.rows})()
 
 
 class FakeClient:
-    """Mimics supabase-py's table().select().eq().execute().data with typed JSON values."""
+    """Mimics supabase-py's table().select().eq().insert().delete().execute().data with typed JSON values."""
 
     def __init__(self, tables):
         self.tables, self.calls = tables, []
 
     def table(self, name):
-        return FakeQuery(list(self.tables[name]), self.calls)
+        return FakeQuery(self.tables.setdefault(name, []), self.calls)
 
 
 def supabase_rows():
@@ -83,3 +103,15 @@ def test_supabase_repo_rederives_party_when_rows_are_missing(caplog):
     with caplog.at_level(logging.WARNING):
         party = repo.party(b)
     assert party.count(CHILD) == 2 and "re-deriving" in caplog.text
+
+
+def test_supabase_repo_records_confirmations_once():
+    repo = SupabaseRepo(client=FakeClient(supabase_rows()))
+    record = {"booking_id": "BKG-1", "confirmed_by": "R. Mkhize", "suggestion_status": "split_party_confirm",
+              "option_id": "OPT-1", "flight_nos": ["WN1001", "WN1002"], "suggestion": {}}
+    assert repo.confirmed_ids() == set() and repo.confirmation("BKG-1") is None
+    assert repo.add_confirmation(record)["confirmed_by"] == "R. Mkhize"
+    assert repo.confirmed_ids() == {"BKG-1"} and repo.confirmation("BKG-1")["option_id"] == "OPT-1"
+    with pytest.raises(AlreadyConfirmed):
+        repo.add_confirmation(record)
+    assert repo.clear_confirmations() == 1 and repo.confirmed_ids() == set()

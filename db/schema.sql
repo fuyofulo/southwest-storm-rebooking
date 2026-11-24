@@ -55,5 +55,18 @@ create table if not exists flights (
 
 create index if not exists flights_route_departure on flights (origin_airport, destination_airport, departure_datetime);
 
+-- The agent's Confirm, one per booking. It records the decision; it does not book a flight
+-- (that happens in Southwest's own systems). A booking with a row here has left the waiting list.
+create table if not exists confirmations (
+    booking_id        text primary key references bookings (booking_id) on delete cascade,
+    confirmed_by      text not null check (length(trim(confirmed_by)) > 0),
+    confirmed_at      timestamptz not null default now(),
+    suggestion_status text not null check (suggestion_status in
+                        ('ready_to_confirm', 'split_party_confirm', 'no_option_found')),
+    option_id         text,                           -- null for no_option_found
+    flight_nos        text[] not null default '{}',   -- the suggested flight(s), lead passenger's first
+    suggestion        jsonb not null                  -- what the agent saw when they clicked Confirm
+);
+
 -- Tell Supabase's REST API to pick up the new tables right away (harmless elsewhere).
 notify pgrst, 'reload schema';

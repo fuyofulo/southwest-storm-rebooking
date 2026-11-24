@@ -6,7 +6,8 @@ The data has no per-passenger field. A party's make-up counts as *stated* only w
   - the note says "Lap infant" (one lap infant, the rest adults), or
   - there is no child, infant or family hint at all (everyone is an adult).
 Any other hint ("Family of 4", or the infant flag with no count) means the make-up
-is unknown. Unknown parties may only travel together; they are never split.
+is unknown. An unknown party can still be split, but the agent must confirm that every
+group without the lead passenger is adults only (see app/options.py).
 
 Every person in party_size needs a seat, lap infants included.
 """
