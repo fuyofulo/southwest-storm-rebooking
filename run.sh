@@ -77,10 +77,10 @@ else
   echo "Skipped: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set in .env, so the service reads the CSVs in data/."
 fi
 
-step "3/4  Family of four, only three seats together (real model if OPENROUTER_API_KEY is set)"
+step "3/4  Family of four, best flight has three seats together (real model if OPENROUTER_API_KEY is set)"
 $PY -m scripts.demo_family
 
 step "4/4  End-to-end over the real data, request date 2026-11-18"
-$PY -m scripts.run_summary --show BKG-10018 BKG-10029
+$PY -m scripts.run_summary --show BKG-10023
 
-step "All done. To try the API:  ./run.sh serve   then open http://127.0.0.1:8000/docs"
+step "All done. Start the service and the agent page:  ./run.sh app   then open http://localhost:5173"
