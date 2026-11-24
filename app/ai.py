@@ -114,10 +114,16 @@ class AIPicker:
         return self._daily_limit_hit_on == date.today()
 
     def pick(self, b: Booking, party: Party, path: str, options: tuple[Option, ...]) -> AIPick:
+        prompt = build_prompt(b, party, path, options)
         if self.daily_limit_hit:
+            # No new calls today, but a reply the model already gave for this exact prompt is still its answer.
+            lookup = getattr(self.complete, "lookup", None)
+            raw = lookup(SYSTEM_PROMPT, prompt) if lookup else None
+            if raw is not None:
+                return parse_pick(raw, [o.option_id for o in options])
             return AIPick(None, None, "OpenRouter daily free-model limit reached; not calling the model", skipped=True)
         try:
-            raw = self.complete(SYSTEM_PROMPT, build_prompt(b, party, path, options))
+            raw = self.complete(SYSTEM_PROMPT, prompt)
         except Exception as exc:  # network, auth, rate limit, ...
             text = str(exc)
             if "per-day" in text or "per day" in text:
@@ -183,8 +189,19 @@ class CachedComplete:
         except (FileNotFoundError, json.JSONDecodeError):
             self._cache = {}
 
+    def _key(self, system: str, user: str) -> str:
+        return hashlib.sha256(f"{self.model}\n{system}\n{user}".encode()).hexdigest()
+
+    def lookup(self, system: str, user: str) -> str | None:
+        """The stored reply for this exact prompt, without calling the model."""
+        with self._lock:
+            raw = self._cache.get(self._key(system, user))
+            if raw is not None:
+                self.hits += 1
+            return raw
+
     def __call__(self, system: str, user: str) -> str:
-        key = hashlib.sha256(f"{self.model}\n{system}\n{user}".encode()).hexdigest()
+        key = self._key(system, user)
         with self._lock:
             if key in self._cache:
                 self.hits += 1

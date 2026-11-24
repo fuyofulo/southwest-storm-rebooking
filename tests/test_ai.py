@@ -227,3 +227,26 @@ def test_daily_free_limit_stops_further_calls_for_today(caplog):
     assert all(s["suggestion_status"] == "ready_to_confirm" and s["ai"]["used_fallback"] for s in out)
     assert all("daily free-model limit" in s["ai"]["fallback_reason"] for s in out)
     assert len(caplog.records) == 1  # one warning, not one per booking
+
+
+def test_after_the_daily_limit_cached_model_replies_are_still_used(tmp_path):
+    # BKG-2's prompt was answered by the model earlier (cached); BKG-1 trips the limit first.
+    b1 = make_booking(booking_id="BKG-1")
+    b2 = make_booking(booking_id="BKG-2", lead_passenger_name="C. Cached")
+    flights = [make_flight()]
+    answered = []
+
+    def model(system, user):
+        if not answered:
+            answered.append(user)
+            return '{"option_id": "OPT-1", "reason": "Answered by the model yesterday."}'
+        raise RuntimeError("Rate limit exceeded: free-models-per-day")
+
+    cache = CachedComplete(model, "m", tmp_path / "cache.json")
+    RebookingService(InMemoryRepo([b2], flights), AIPicker(cache, "m")).suggest("BKG-2", REQ)  # fills the cache
+
+    picker = AIPicker(cache, "m")
+    svc = RebookingService(InMemoryRepo([b1, b2], flights), picker, max_workers=1)
+    s1, s2 = svc.suggest_all(REQ)
+    assert picker.daily_limit_hit and s1["ai"]["used_fallback"]
+    assert not s2["ai"]["used_fallback"] and s2["ai"]["reason"] == "Answered by the model yesterday."
