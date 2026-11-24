@@ -43,7 +43,9 @@ Without the Supabase values the service reads `data/*.csv` and keeps confirmatio
 
 ## The agent page
 
-One screen, no second page or tab. The list holds every booking still waiting, newest `cancellation_time` first. Each row shows `booking_id`, `lead_passenger_name`, `party_size`, `origin_airport`, `destination_airport`, `earliest_acceptable_departure`, the one suggestion, its `suggestion_status` and a Confirm button. Clicking a row opens it beside the list with:
+One quiet screen, no second page or tab, in light or dark (follows the system; the sun/moon button switches). A top bar with the agent's name, a sub-bar with a `suggestion_status` filter (All / Ready / Split / No option), "Booking 5 of 140" arrows and a search box, and a status bar with keyboard hints.
+
+The list holds every booking still waiting, newest `cancellation_time` first. Each row shows `lead_passenger_name` with `booking_id` under it, `party_size`, `origin_airport` → `destination_airport`, `earliest_acceptable_departure`, the one suggestion, its `suggestion_status` and a Confirm button. Clicking a row opens it beside the list with:
 
 - each suggested flight's `flight_no`, `departure_datetime`, `open_seats_total`, `open_seats_adjacent_max` and `flight_status`, and who sits on it, with the lead passenger named;
 - `waiver_eligible`, the fare result and the original fare;
@@ -56,7 +58,15 @@ One screen, no second page or tab. The list holds every booking still waiting, n
 | `split_party_confirm` | Party split into side-by-side groups on different flights. Party of 4, best block 3: three including the lead on that flight, the fourth on another valid flight | Needs the "family agreed" tick first. If the make-up isn't stated, the tick also confirms the separate passenger is an adult |
 | `no_option_found` | No flight met the rules; the panel says why | Records that the agent handled it by hand or escalated it |
 
-After Confirm the row leaves the list and the next booking opens. Arrow keys move through the list. If the service is down, the page says so and offers Try again; it never spins forever.
+After Confirm the row leaves the list and the next booking opens. If the service is down, the page says so and offers Try again; it never spins forever.
+
+| Key | Does |
+|---|---|
+| `j` / `k` (or ↓ / ↑) | Next / previous booking |
+| `a` | Tick "the family agreed" on a split |
+| `⌘↵` (Ctrl+Enter) | Confirm the open booking |
+| `/` | Search by name, booking, route or flight (Esc clears) |
+| `r` | Refresh the list |
 
 **Screenshot: the family of four's suggestion, `split_party_confirm`, confirmed**
 
