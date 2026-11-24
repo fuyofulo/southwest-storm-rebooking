@@ -1,0 +1,141 @@
+booking_id,party_size,lead_passenger_name,cancelled_flight_no,origin_airport,destination_airport,scheduled_departure,cancellation_time,fare_class,fare_paid_usd,waiver_eligible,onward_connection_flight_no,has_checked_bags,needs_wheelchair_assist,travels_with_infant,loyalty_tier,hotel_voucher_issued,earliest_acceptable_departure,agent_note
+BKG-10001,2,D. Whitfield,WN3014,DEN,PHX,2026-11-16T07:40:00,2026-11-16T04:12:00,Wanna Get Away,418.60,true,,true,false,false,None,false,2026-11-18T12:00:00,
+BKG-10002,1,M. Castellanos,WN3007,DEN,MDW,2026-11-15T18:25:00,2026-11-15T14:50:00,Anytime,342.00,true,WN3101,false,false,false,A-List,true,2026-11-18T06:00:00,First flight out any routing.
+BKG-10003,4,A. Nkemelu,WN3030,DEN,MCO,2026-11-16T06:15:00,2026-11-16T02:40:00,Wanna Get Away,1096.80,true,,true,false,true,None,true,2026-11-18T08:00:00,Party of 4 must sit together.
+BKG-10004,1,J. Brandeis,WN3001,DEN,LAS,2026-11-15T11:05:00,2026-11-15T08:30:00,Wanna Get Away Plus,196.50,true,,false,false,false,None,false,2026-11-18T14:30:00,
+BKG-10005,3,R. Sorensen,WN3041,MDW,DEN,2026-11-16T13:50:00,2026-11-16T10:15:00,Wanna Get Away,651.00,true,WN3055,true,false,false,A-List,false,2026-11-19T09:00:00,Two children in party.
+BKG-10006,2,T. Okafor,WN3023,DEN,BWI,2026-11-17T05:55:00,2026-11-17T01:20:00,Wanna Get Away,374.20,true,,false,false,false,None,false,2026-11-18T10:00:00,
+BKG-10007,1,L. Quintero,WN3066,LAS,DEN,2026-11-16T16:40:00,2026-11-16T12:05:00,Business Select,1180.00,false,,true,false,false,A-List Preferred,false,2026-11-18T07:30:00,"Funeral, time critical."
+BKG-10008,6,H. Vandermeer,WN3072,DEN,HOU,2026-11-16T09:10:00,2026-11-16T05:45:00,Wanna Get Away,1518.00,true,,true,false,true,None,true,2026-11-19T06:00:00,Happy to split if needed.
+BKG-10009,2,S. Chaudhary,WN3019,DEN,DAL,2026-11-15T20:30:00,2026-11-15T17:00:00,Wanna Get Away Plus,432.80,true,,false,true,false,None,false,2026-11-18T13:00:00,
+BKG-10010,1,P. Lindgren,WN3048,DEN,SAN,2026-11-17T07:20:00,2026-11-17T03:35:00,Wanna Get Away,153.90,true,WN3088,true,false,false,None,false,2026-11-18T18:00:00,Land before 9pm local.
+BKG-10011,4,C. Mbeki,WN3055,DEN,LAX,2026-11-16T10:45:00,2026-11-16T06:50:00,Wanna Get Away,1248.00,true,,true,false,false,A-List,true,2026-11-18T09:00:00,Party of 4 must sit together.
+BKG-10012,3,K. Fitzgerald,WN3060,PHX,DEN,2026-11-17T12:15:00,2026-11-17T08:40:00,Anytime,879.00,true,,false,false,true,None,false,2026-11-19T11:00:00,
+BKG-10013,1,N. Santoro,WN3077,DEN,STL,2026-11-15T06:50:00,2026-11-15T03:10:00,Wanna Get Away,118.40,true,,false,false,false,None,false,2026-11-18T06:30:00,At the gate now.
+BKG-10014,2,E. Abramson,WN3083,DEN,BNA,2026-11-16T14:05:00,2026-11-16T10:30:00,Wanna Get Away,388.00,true,WN3014,true,false,false,A-List,false,2026-11-18T15:00:00,
+BKG-10015,5,B. Nakamura,WN3094,DEN,SMF,2026-11-17T08:35:00,2026-11-17T04:55:00,Wanna Get Away Plus,1465.00,true,,true,false,true,None,true,2026-11-19T08:00:00,Happy to split if needed.
+BKG-10016,1,G. Delacroix,WN3101,DEN,OAK,2026-11-15T15:30:00,2026-11-15T12:05:00,Wanna Get Away,167.20,true,,false,false,false,None,false,2026-11-18T20:00:00,
+BKG-10017,2,V. Petrosyan,WN3108,DAL,DEN,2026-11-16T17:50:00,2026-11-16T14:15:00,Anytime,604.00,true,,true,false,false,A-List Preferred,false,2026-11-18T11:30:00,No overnight connection.
+BKG-10018,4,W. Achterberg,WN3115,DEN,MCO,2026-11-17T06:40:00,2026-11-17T02:20:00,Wanna Get Away,1184.40,true,,true,false,false,None,true,2026-11-18T07:00:00,Two children in party of 4.
+BKG-10019,1,F. Oyelaran,WN3120,DEN,PHX,2026-11-15T09:15:00,2026-11-15T05:45:00,Wanna Get Away,131.00,true,WN3030,false,false,false,None,false,2026-11-18T16:00:00,
+BKG-10020,3,O. Strand,WN3036,DEN,MDW,2026-11-16T11:25:00,2026-11-16T07:50:00,Wanna Get Away Plus,738.00,true,,true,false,false,A-List,false,2026-11-19T07:00:00,Call back on mobile.
+BKG-10021,2,D. Whitfield,WN3007,DEN,LAS,2026-11-17T13:40:00,2026-11-17T09:55:00,Wanna Get Away,296.60,true,,false,false,false,None,false,2026-11-18T14:00:00,
+BKG-10022,1,M. Castellanos,WN3023,DEN,BWI,2026-11-15T07:05:00,2026-11-15T03:30:00,Business Select,1340.00,true,,true,false,false,A-List Preferred,true,2026-11-18T06:00:00,First flight out any routing.
+BKG-10023,4,A. Nkemelu,WN3041,DEN,HOU,2026-11-16T08:55:00,2026-11-16T05:10:00,Wanna Get Away,1072.00,true,,true,false,true,None,false,2026-11-18T10:30:00,Party of 4 must sit together.
+BKG-10024,2,J. Brandeis,WN3048,LAS,DEN,2026-11-17T16:20:00,2026-11-17T12:40:00,Wanna Get Away,340.00,true,WN3066,false,false,false,None,false,2026-11-19T10:00:00,
+BKG-10025,1,R. Sorensen,WN3060,DEN,SAN,2026-11-15T12:50:00,2026-11-15T09:20:00,Wanna Get Away,142.80,true,,true,false,false,A-List,false,2026-11-18T12:00:00,
+BKG-10026,3,T. Okafor,WN3072,DEN,LAX,2026-11-16T15:35:00,2026-11-16T11:55:00,Anytime,921.00,true,,true,true,false,None,true,2026-11-18T13:30:00,Party of 3 must sit together.
+BKG-10027,6,L. Quintero,WN3083,DEN,DAL,2026-11-17T09:45:00,2026-11-17T06:05:00,Wanna Get Away,1602.00,true,,true,false,true,None,true,2026-11-19T08:30:00,Happy to split if needed.
+BKG-10028,1,H. Vandermeer,WN3094,MDW,DEN,2026-11-15T17:10:00,2026-11-15T13:35:00,Wanna Get Away Plus,224.50,true,,false,false,false,None,false,2026-11-18T17:00:00,
+BKG-10029,2,S. Chaudhary,WN3101,DEN,STL,2026-11-16T06:30:00,2026-11-16T02:55:00,Wanna Get Away,312.40,false,WN3115,true,false,false,None,false,2026-11-18T09:30:00,Bags tagged to STL.
+BKG-10030,4,P. Lindgren,WN3108,DEN,MCO,2026-11-17T11:15:00,2026-11-17T07:30:00,Wanna Get Away,1316.00,true,,true,false,false,A-List,true,2026-11-18T08:00:00,Two children in party of 4.
+BKG-10031,1,C. Mbeki,WN3001,DEN,BNA,2026-11-15T10:40:00,2026-11-15T07:05:00,Wanna Get Away,159.00,true,,false,false,false,None,false,2026-11-18T19:00:00,
+BKG-10032,5,K. Fitzgerald,WN3014,DEN,PHX,2026-11-16T12:05:00,2026-11-16T08:25:00,Wanna Get Away,1340.00,true,,true,false,true,None,true,2026-11-19T06:30:00,Party of 5 needs two rows.
+BKG-10033,1,N. Santoro,WN3019,DEN,SMF,2026-11-17T14:50:00,2026-11-17T11:10:00,Wanna Get Away Plus,238.90,true,,false,false,false,None,false,2026-11-18T21:00:00,
+BKG-10034,2,E. Abramson,WN3030,DEN,OAK,2026-11-15T08:20:00,2026-11-15T04:45:00,Wanna Get Away,362.00,true,WN3077,true,false,false,A-List,false,2026-11-18T10:00:00,
+BKG-10035,3,B. Nakamura,WN3036,PHX,DEN,2026-11-16T18:35:00,2026-11-16T15:00:00,Wanna Get Away,624.60,true,,true,false,false,None,false,2026-11-20T09:00:00,Will not fly before Friday.
+BKG-10036,1,G. Delacroix,WN3055,DEN,LAS,2026-11-17T05:40:00,2026-11-17T01:55:00,Wanna Get Away,124.00,true,,false,false,false,None,false,2026-11-18T06:00:00,At the gate now.
+BKG-10037,4,V. Petrosyan,WN3066,DEN,MDW,2026-11-15T13:15:00,2026-11-15T09:40:00,Wanna Get Away Plus,1392.00,true,,true,false,false,A-List,true,2026-11-18T11:00:00,Party of 4 must sit together.
+BKG-10038,2,W. Achterberg,WN3077,DEN,HOU,2026-11-16T07:55:00,2026-11-16T04:20:00,Wanna Get Away,298.40,true,,false,false,true,None,false,2026-11-18T13:00:00,
+BKG-10039,1,F. Oyelaran,WN3088,DAL,DEN,2026-11-17T17:25:00,2026-11-17T13:50:00,Anytime,366.00,true,WN3094,true,false,false,None,false,2026-11-19T12:00:00,
+BKG-10040,2,O. Strand,WN3094,DEN,BWI,2026-11-15T19:05:00,2026-11-15T15:30:00,Wanna Get Away,404.00,true,,true,false,false,A-List Preferred,false,2026-11-18T08:30:00,No overnight connection.
+BKG-10041,1,D. Whitfield,WN3101,DEN,DAL,2026-11-16T10:20:00,2026-11-16T06:45:00,Wanna Get Away,136.70,true,,false,false,false,None,false,2026-11-18T15:30:00,
+BKG-10042,4,M. Castellanos,WN3108,DEN,SAN,2026-11-17T08:10:00,2026-11-17T04:30:00,Wanna Get Away,1104.00,true,,true,false,true,None,true,2026-11-18T09:30:00,Family of 4 must sit together.
+BKG-10043,2,A. Nkemelu,WN3115,LAS,DEN,2026-11-15T14:35:00,2026-11-15T11:00:00,Wanna Get Away Plus,448.00,true,,false,false,false,A-List,false,2026-11-18T16:30:00,
+BKG-10044,3,J. Brandeis,WN3120,DEN,STL,2026-11-16T05:50:00,2026-11-16T02:10:00,Wanna Get Away,576.00,true,WN3019,true,false,false,None,true,2026-11-18T07:00:00,Call back on mobile.
+BKG-10045,1,R. Sorensen,WN3007,DEN,MCO,2026-11-17T15:45:00,2026-11-17T12:05:00,Business Select,1420.00,true,,true,false,false,A-List Preferred,false,2026-11-18T10:00:00,
+BKG-10046,2,T. Okafor,WN3014,DEN,BNA,2026-11-15T16:55:00,2026-11-15T13:20:00,Wanna Get Away,330.60,true,,true,false,false,None,false,2026-11-18T18:30:00,
+BKG-10047,5,L. Quintero,WN3023,DEN,LAX,2026-11-16T09:30:00,2026-11-16T05:55:00,Wanna Get Away,1395.00,true,,true,false,true,None,true,2026-11-19T07:30:00,Happy to split if needed.
+BKG-10048,1,H. Vandermeer,WN3030,DEN,OAK,2026-11-17T12:40:00,2026-11-17T09:05:00,Wanna Get Away,148.50,true,WN3060,false,false,false,None,false,2026-11-18T20:30:00,
+BKG-10049,2,S. Chaudhary,WN3036,MDW,DEN,2026-11-15T11:45:00,2026-11-15T08:10:00,Anytime,588.00,true,,false,true,false,A-List,false,2026-11-18T12:30:00,Wheelchair at both ends.
+BKG-10050,4,P. Lindgren,WN3041,DEN,PHX,2026-11-16T13:10:00,2026-11-16T09:35:00,Wanna Get Away,1056.80,true,,true,false,false,None,true,2026-11-18T08:30:00,Party of 4 must sit together.
+BKG-10051,1,C. Mbeki,WN3048,DEN,MDW,2026-11-17T06:05:00,2026-11-17T02:25:00,Wanna Get Away Plus,206.00,true,,false,false,false,None,false,2026-11-18T07:30:00,
+BKG-10052,3,K. Fitzgerald,WN3055,DEN,HOU,2026-11-15T18:50:00,2026-11-15T15:15:00,Wanna Get Away,669.00,false,,true,false,false,None,false,2026-11-18T14:00:00,Wants same fare class.
+BKG-10053,2,N. Santoro,WN3060,DEN,SMF,2026-11-16T15:20:00,2026-11-16T11:40:00,Wanna Get Away,384.20,true,WN3108,true,false,false,None,false,2026-11-19T09:30:00,
+BKG-10054,1,E. Abramson,WN3066,DEN,BWI,2026-11-17T09:55:00,2026-11-17T06:20:00,Wanna Get Away,172.00,true,,false,false,false,A-List,false,2026-11-18T11:00:00,
+BKG-10055,6,B. Nakamura,WN3072,DEN,MCO,2026-11-15T07:35:00,2026-11-15T04:00:00,Wanna Get Away Plus,1842.00,true,,true,false,true,None,true,2026-11-19T06:00:00,Happy to split if needed.
+BKG-10056,2,G. Delacroix,WN3077,PHX,DEN,2026-11-16T17:05:00,2026-11-16T13:30:00,Wanna Get Away,318.00,true,,false,false,false,None,false,2026-11-18T17:30:00,
+BKG-10057,1,V. Petrosyan,WN3083,DEN,LAS,2026-11-17T10:30:00,2026-11-17T06:50:00,Wanna Get Away,127.40,true,,true,false,false,None,false,2026-11-18T13:30:00,At the gate now.
+BKG-10058,4,W. Achterberg,WN3088,DEN,DAL,2026-11-15T12:15:00,2026-11-15T08:40:00,Wanna Get Away,1128.00,true,,true,false,false,A-List,true,2026-11-18T09:00:00,Party of 4 must sit together.
+BKG-10059,2,F. Oyelaran,WN3094,DEN,SAN,2026-11-16T08:40:00,2026-11-16T05:05:00,Anytime,612.00,true,WN3115,false,false,false,A-List Preferred,false,2026-11-18T10:30:00,
+BKG-10060,1,O. Strand,WN3101,DEN,BNA,2026-11-17T13:55:00,2026-11-17T10:15:00,Wanna Get Away,155.80,true,,false,false,false,None,false,2026-11-20T08:00:00,Cannot travel until Friday.
+BKG-10061,3,D. Whitfield,WN3108,DEN,STL,2026-11-15T09:25:00,2026-11-15T05:50:00,Wanna Get Away,591.00,true,,true,false,true,None,true,2026-11-18T12:00:00,Lap infant on booking.
+BKG-10062,2,M. Castellanos,WN3115,DEN,LAX,2026-11-16T11:50:00,2026-11-16T08:15:00,Wanna Get Away Plus,466.00,true,,true,false,false,None,false,2026-11-18T15:00:00,
+BKG-10063,1,A. Nkemelu,WN3120,LAS,DEN,2026-11-17T07:45:00,2026-11-17T04:10:00,Wanna Get Away,139.00,true,,false,false,false,None,false,2026-11-18T08:00:00,
+BKG-10064,5,J. Brandeis,WN3001,DEN,MDW,2026-11-15T15:10:00,2026-11-15T11:35:00,Wanna Get Away,1485.00,true,,true,false,true,A-List,true,2026-11-19T10:00:00,Two children in party of 5.
+BKG-10065,2,R. Sorensen,WN3007,DEN,OAK,2026-11-16T06:55:00,2026-11-16T03:20:00,Wanna Get Away,302.80,true,WN3041,false,false,false,None,false,2026-11-18T09:00:00,
+BKG-10066,4,T. Okafor,WN3014,DEN,HOU,2026-11-17T16:35:00,2026-11-17T12:55:00,Wanna Get Away,1160.00,true,,true,false,false,None,true,2026-11-18T11:30:00,Family of 4 must sit together.
+BKG-10067,1,L. Quintero,WN3019,DEN,PHX,2026-11-15T20:05:00,2026-11-15T16:30:00,Business Select,1265.00,false,,true,false,false,A-List Preferred,false,2026-11-18T07:00:00,Needs aisle seat.
+BKG-10068,2,H. Vandermeer,WN3023,DAL,DEN,2026-11-16T14:40:00,2026-11-16T11:05:00,Wanna Get Away,356.00,true,,false,false,false,None,false,2026-11-18T16:00:00,
+BKG-10069,3,S. Chaudhary,WN3030,DEN,BWI,2026-11-17T05:20:00,2026-11-17T01:45:00,Wanna Get Away Plus,711.00,true,,true,false,false,A-List,false,2026-11-19T08:00:00,
+BKG-10070,1,P. Lindgren,WN3036,DEN,SMF,2026-11-15T10:55:00,2026-11-15T07:20:00,Wanna Get Away,163.40,true,WN3083,false,false,false,None,true,2026-11-18T19:30:00,
+BKG-10071,4,C. Mbeki,WN3041,DEN,SAN,2026-11-16T12:30:00,2026-11-16T08:50:00,Wanna Get Away,1092.00,true,,true,false,true,None,true,2026-11-18T10:00:00,Party of 4 must sit together.
+BKG-10072,2,K. Fitzgerald,WN3048,DEN,MCO,2026-11-17T08:05:00,2026-11-17T04:25:00,Anytime,648.00,true,,true,false,false,A-List,false,2026-11-18T12:30:00,Land before 9pm local.
+BKG-10073,1,N. Santoro,WN3055,MDW,DEN,2026-11-15T17:40:00,2026-11-15T14:05:00,Wanna Get Away,145.00,true,,false,false,false,None,false,2026-11-18T18:00:00,
+BKG-10074,2,E. Abramson,WN3060,DEN,DAL,2026-11-16T09:50:00,2026-11-16T06:10:00,Wanna Get Away,290.60,true,,false,false,false,None,false,2026-11-18T11:00:00,
+BKG-10075,6,B. Nakamura,WN3066,DEN,LAX,2026-11-17T11:30:00,2026-11-17T07:55:00,Wanna Get Away Plus,1956.00,true,,true,false,true,None,true,2026-11-19T07:00:00,Happy to split if needed.
+BKG-10076,1,G. Delacroix,WN3072,DEN,BNA,2026-11-15T13:45:00,2026-11-15T10:10:00,Wanna Get Away,151.20,true,WN3101,true,false,false,None,false,2026-11-18T14:30:00,
+BKG-10077,3,V. Petrosyan,WN3077,DEN,MDW,2026-11-16T16:10:00,2026-11-16T12:35:00,Wanna Get Away,633.00,true,,true,true,false,A-List,false,2026-11-18T09:30:00,Wheelchair assist at DEN.
+BKG-10078,2,W. Achterberg,WN3083,PHX,DEN,2026-11-17T06:25:00,2026-11-17T02:45:00,Wanna Get Away,326.40,true,,false,false,false,None,false,2026-11-18T13:00:00,
+BKG-10079,4,F. Oyelaran,WN3088,DEN,STL,2026-11-15T08:50:00,2026-11-15T05:15:00,Wanna Get Away,1016.00,true,,true,false,false,None,true,2026-11-18T07:30:00,Party of 4 must sit together.
+BKG-10080,1,O. Strand,WN3094,DEN,OAK,2026-11-16T18:15:00,2026-11-16T14:40:00,Wanna Get Away Plus,214.00,true,,false,false,false,None,false,2026-11-18T20:00:00,
+BKG-10081,2,D. Whitfield,WN3101,DEN,HOU,2026-11-17T10:05:00,2026-11-17T06:25:00,Wanna Get Away,344.00,true,WN3120,true,false,true,None,false,2026-11-18T12:00:00,Lap infant on booking.
+BKG-10082,5,M. Castellanos,WN3108,DEN,PHX,2026-11-15T14:20:00,2026-11-15T10:45:00,Wanna Get Away,1275.00,true,,true,false,false,A-List,true,2026-11-19T06:30:00,Two children in party of 5.
+BKG-10083,1,A. Nkemelu,WN3115,DEN,LAS,2026-11-16T07:10:00,2026-11-16T03:35:00,Wanna Get Away,121.60,true,,false,false,false,None,false,2026-11-18T08:30:00,At the gate now.
+BKG-10084,2,J. Brandeis,WN3120,DEN,BWI,2026-11-17T15:30:00,2026-11-17T11:50:00,Anytime,596.00,true,,true,false,false,A-List Preferred,false,2026-11-18T17:00:00,No overnight connection.
+BKG-10085,3,R. Sorensen,WN3001,LAS,DEN,2026-11-15T19:45:00,2026-11-15T16:10:00,Wanna Get Away,558.00,false,,true,false,false,None,false,2026-11-18T15:00:00,Original fare rules apply.
+BKG-10086,4,T. Okafor,WN3007,DEN,SMF,2026-11-16T10:35:00,2026-11-16T06:55:00,Wanna Get Away Plus,1424.00,true,,true,false,true,None,true,2026-11-18T09:00:00,Family of 4 must sit together.
+BKG-10087,1,L. Quintero,WN3014,DEN,MCO,2026-11-17T12:50:00,2026-11-17T09:15:00,Wanna Get Away,178.00,true,WN3036,false,false,false,None,false,2026-11-18T13:30:00,
+BKG-10088,2,H. Vandermeer,WN3019,DEN,BNA,2026-11-15T06:40:00,2026-11-15T03:05:00,Wanna Get Away,308.00,true,,true,false,false,None,false,2026-11-18T07:00:00,
+BKG-10089,1,S. Chaudhary,WN3023,DEN,SAN,2026-11-16T13:25:00,2026-11-16T09:45:00,Wanna Get Away,134.90,true,,false,false,false,A-List,false,2026-11-18T16:00:00,
+BKG-10090,3,P. Lindgren,WN3030,DAL,DEN,2026-11-17T17:15:00,2026-11-17T13:35:00,Wanna Get Away,642.00,true,,true,false,true,None,true,2026-11-19T11:00:00,
+BKG-10091,4,C. Mbeki,WN3036,DEN,LAX,2026-11-15T11:20:00,2026-11-15T07:45:00,Wanna Get Away,1208.00,true,,true,false,false,None,true,2026-11-18T10:30:00,Party of 4 must sit together.
+BKG-10092,2,K. Fitzgerald,WN3041,DEN,OAK,2026-11-16T05:45:00,2026-11-16T02:05:00,Wanna Get Away Plus,452.00,true,WN3072,false,false,false,None,false,2026-11-18T06:30:00,First flight out any routing.
+BKG-10093,1,N. Santoro,WN3048,MDW,DEN,2026-11-17T14:10:00,2026-11-17T10:30:00,Wanna Get Away,157.00,true,,false,false,false,None,false,2026-11-18T18:30:00,
+BKG-10094,2,E. Abramson,WN3055,DEN,STL,2026-11-15T16:30:00,2026-11-15T12:55:00,Wanna Get Away,336.20,true,,true,false,false,None,false,2026-11-18T11:00:00,
+BKG-10095,5,B. Nakamura,WN3060,DEN,MDW,2026-11-16T08:15:00,2026-11-16T04:35:00,Wanna Get Away,1420.00,true,,true,false,true,A-List,true,2026-11-19T08:30:00,Happy to split if needed.
+BKG-10096,1,G. Delacroix,WN3066,DEN,DAL,2026-11-17T09:35:00,2026-11-17T05:55:00,Business Select,1392.00,true,,true,false,false,A-List Preferred,false,2026-11-18T07:30:00,
+BKG-10097,2,V. Petrosyan,WN3072,DEN,PHX,2026-11-15T12:05:00,2026-11-15T08:30:00,Wanna Get Away,284.00,true,,false,false,false,None,false,2026-11-18T14:00:00,
+BKG-10098,4,W. Achterberg,WN3077,DEN,BWI,2026-11-16T15:55:00,2026-11-16T12:20:00,Wanna Get Away,1248.80,true,,true,false,false,None,true,2026-11-18T08:00:00,Two children in party of 4.
+BKG-10099,1,F. Oyelaran,WN3083,PHX,DEN,2026-11-17T07:00:00,2026-11-17T03:20:00,Wanna Get Away Plus,232.00,true,WN3115,false,false,false,None,false,2026-11-18T12:30:00,
+BKG-10100,3,O. Strand,WN3088,DEN,HOU,2026-11-15T18:40:00,2026-11-15T15:05:00,Anytime,936.00,true,,true,false,false,A-List,false,2026-11-19T09:00:00,Call back on mobile.
+BKG-10101,2,D. Whitfield,WN3094,DEN,MCO,2026-11-16T10:10:00,2026-11-16T06:30:00,Wanna Get Away,398.00,true,,true,false,true,None,true,2026-11-18T09:30:00,
+BKG-10102,1,M. Castellanos,WN3101,DEN,SMF,2026-11-17T13:20:00,2026-11-17T09:40:00,Wanna Get Away,169.50,true,,false,false,false,None,false,2026-11-18T17:30:00,
+BKG-10103,4,A. Nkemelu,WN3108,DEN,BNA,2026-11-15T09:05:00,2026-11-15T05:30:00,Wanna Get Away,1084.00,true,,true,false,false,A-List,true,2026-11-18T10:00:00,Party of 4 must sit together.
+BKG-10104,2,J. Brandeis,WN3115,LAS,DEN,2026-11-16T17:35:00,2026-11-16T14:00:00,Wanna Get Away,314.60,true,WN3007,false,false,false,None,false,2026-11-18T19:00:00,
+BKG-10105,1,R. Sorensen,WN3120,DEN,LAS,2026-11-17T06:15:00,2026-11-17T02:35:00,Wanna Get Away,126.00,true,,true,false,false,None,false,2026-11-18T06:30:00,At the gate now.
+BKG-10106,6,T. Okafor,WN3001,DEN,SAN,2026-11-15T14:55:00,2026-11-15T11:20:00,Wanna Get Away Plus,1788.00,true,,true,false,true,None,true,2026-11-19T07:30:00,Happy to split if needed.
+BKG-10107,2,L. Quintero,WN3007,DEN,STL,2026-11-16T11:40:00,2026-11-16T08:05:00,Wanna Get Away,322.00,true,,false,false,false,None,false,2026-11-18T13:00:00,
+BKG-10108,3,H. Vandermeer,WN3014,DEN,OAK,2026-11-17T16:05:00,2026-11-17T12:25:00,Wanna Get Away,618.00,true,,true,true,false,None,false,2026-11-20T10:00:00,Cannot leave before Friday.
+BKG-10109,1,S. Chaudhary,WN3019,MDW,DEN,2026-11-15T07:50:00,2026-11-15T04:15:00,Wanna Get Away,141.80,true,,false,false,false,A-List,false,2026-11-18T08:30:00,
+BKG-10110,4,P. Lindgren,WN3023,DEN,MDW,2026-11-16T12:55:00,2026-11-16T09:20:00,Wanna Get Away,1136.00,true,,true,false,true,None,true,2026-11-18T11:00:00,Family of 4 must sit together.
+BKG-10111,2,C. Mbeki,WN3030,DEN,PHX,2026-11-17T08:25:00,2026-11-17T04:45:00,Anytime,572.00,true,WN3060,true,false,false,A-List Preferred,false,2026-11-18T10:30:00,No overnight connection.
+BKG-10112,1,K. Fitzgerald,WN3036,DEN,DAL,2026-11-15T20:15:00,2026-11-15T16:40:00,Wanna Get Away,132.40,true,,false,false,false,None,false,2026-11-18T21:00:00,
+BKG-10113,5,N. Santoro,WN3041,DEN,HOU,2026-11-16T06:05:00,2026-11-16T02:25:00,Wanna Get Away,1360.00,true,,true,false,true,None,true,2026-11-19T06:00:00,Two children in party of 5.
+BKG-10114,2,E. Abramson,WN3048,DEN,BWI,2026-11-17T15:10:00,2026-11-17T11:35:00,Wanna Get Away Plus,478.00,true,,true,false,false,None,false,2026-11-18T16:30:00,
+BKG-10115,1,B. Nakamura,WN3055,DAL,DEN,2026-11-15T10:25:00,2026-11-15T06:50:00,Wanna Get Away,148.00,false,,false,false,false,None,false,2026-11-18T12:00:00,Rebooked under own fare.
+BKG-10116,3,G. Delacroix,WN3060,DEN,LAX,2026-11-16T14:30:00,2026-11-16T10:55:00,Wanna Get Away,681.00,true,WN3094,true,false,false,A-List,true,2026-11-18T09:00:00,Party of 3 must sit together.
+BKG-10117,4,V. Petrosyan,WN3066,DEN,MCO,2026-11-17T07:35:00,2026-11-17T03:55:00,Wanna Get Away,1264.00,true,,true,false,false,None,true,2026-11-18T08:30:00,Party of 4 must sit together.
+BKG-10118,1,W. Achterberg,WN3072,DEN,BNA,2026-11-15T13:05:00,2026-11-15T09:30:00,Wanna Get Away,160.70,true,,false,false,false,None,false,2026-11-18T15:30:00,
+BKG-10119,2,F. Oyelaran,WN3077,DEN,SMF,2026-11-16T16:45:00,2026-11-16T13:10:00,Wanna Get Away,350.00,true,,true,false,false,None,false,2026-11-19T10:30:00,
+BKG-10120,1,O. Strand,WN3083,LAS,DEN,2026-11-17T05:35:00,2026-11-17T01:50:00,Wanna Get Away Plus,228.40,true,,false,false,false,None,false,2026-11-18T07:00:00,First flight out any routing.
+BKG-10121,4,D. Whitfield,WN3088,DEN,LAS,2026-11-15T11:55:00,2026-11-15T08:20:00,Wanna Get Away,1040.00,true,,true,false,true,None,true,2026-11-18T09:30:00,Family of 4 must sit together.
+BKG-10122,2,M. Castellanos,WN3094,DEN,OAK,2026-11-16T09:20:00,2026-11-16T05:45:00,Wanna Get Away,306.80,true,WN3030,false,false,false,A-List,false,2026-11-18T11:30:00,
+BKG-10123,1,A. Nkemelu,WN3101,DEN,STL,2026-11-17T12:10:00,2026-11-17T08:30:00,Business Select,1510.00,true,,true,false,false,A-List Preferred,false,2026-11-18T13:00:00,
+BKG-10124,3,J. Brandeis,WN3108,PHX,DEN,2026-11-15T17:55:00,2026-11-15T14:20:00,Wanna Get Away,603.00,true,,true,false,false,None,false,2026-11-18T19:30:00,
+BKG-10125,2,R. Sorensen,WN3115,DEN,HOU,2026-11-16T07:25:00,2026-11-16T03:50:00,Wanna Get Away Plus,442.00,true,,true,false,false,None,false,2026-11-18T08:00:00,Bags tagged to HOU.
+BKG-10126,6,T. Okafor,WN3120,DEN,BWI,2026-11-17T14:45:00,2026-11-17T11:10:00,Wanna Get Away,1644.00,true,,true,false,true,None,true,2026-11-19T09:00:00,Happy to split if needed.
+BKG-10127,1,L. Quintero,WN3001,DEN,SAN,2026-11-15T08:35:00,2026-11-15T05:00:00,Wanna Get Away,129.90,true,,false,false,false,None,false,2026-11-18T10:00:00,
+BKG-10128,2,H. Vandermeer,WN3007,DEN,MDW,2026-11-16T18:00:00,2026-11-16T14:25:00,Anytime,620.00,true,WN3048,true,true,false,A-List,false,2026-11-18T14:30:00,Wheelchair assist at MDW.
+BKG-10129,4,S. Chaudhary,WN3014,DEN,DAL,2026-11-17T10:50:00,2026-11-17T07:15:00,Wanna Get Away,1072.80,true,,true,false,false,None,true,2026-11-18T12:00:00,Party of 4 must sit together.
+BKG-10130,1,P. Lindgren,WN3019,DEN,PHX,2026-11-15T15:40:00,2026-11-15T12:05:00,Wanna Get Away,138.00,true,,false,false,false,None,false,2026-11-18T17:00:00,
+BKG-10131,3,C. Mbeki,WN3023,DEN,MCO,2026-11-16T06:45:00,2026-11-16T03:10:00,Wanna Get Away Plus,735.00,true,,true,false,true,None,true,2026-11-18T07:30:00,Lap infant on booking.
+BKG-10132,2,K. Fitzgerald,WN3030,MDW,DEN,2026-11-17T17:30:00,2026-11-17T13:55:00,Wanna Get Away,332.00,true,,false,false,false,None,false,2026-11-20T12:00:00,Not before Friday midday.
+BKG-10133,1,N. Santoro,WN3036,DEN,LAX,2026-11-15T12:30:00,2026-11-15T08:55:00,Wanna Get Away,166.00,true,WN3077,true,false,false,None,false,2026-11-18T13:30:00,
+BKG-10134,5,E. Abramson,WN3041,DEN,BNA,2026-11-16T13:35:00,2026-11-16T09:55:00,Wanna Get Away,1305.00,true,,true,false,true,A-List,true,2026-11-19T07:00:00,Two children in party of 5.
+BKG-10135,2,B. Nakamura,WN3048,DEN,SMF,2026-11-17T09:00:00,2026-11-17T05:20:00,Wanna Get Away,368.40,true,,false,false,false,None,false,2026-11-18T10:00:00,
+BKG-10136,1,G. Delacroix,WN3055,DEN,BWI,2026-11-15T19:20:00,2026-11-15T15:45:00,Wanna Get Away Plus,241.00,true,,false,false,false,None,false,2026-11-18T20:30:00,
+BKG-10137,4,V. Petrosyan,WN3060,DEN,OAK,2026-11-16T11:10:00,2026-11-16T07:30:00,Wanna Get Away,1148.00,true,,true,false,false,None,true,2026-11-18T09:00:00,Family of 4 must sit together.
+BKG-10138,2,W. Achterberg,WN3066,LAS,DEN,2026-11-17T16:50:00,2026-11-17T13:15:00,Wanna Get Away,310.00,true,WN3088,true,false,false,None,false,2026-11-18T18:00:00,
+BKG-10139,1,F. Oyelaran,WN3072,DEN,STL,2026-11-15T07:15:00,2026-11-15T03:40:00,Wanna Get Away,123.50,true,,false,false,false,A-List,false,2026-11-18T07:30:00,At the gate now.
+BKG-10140,3,O. Strand,WN3077,DEN,HOU,2026-11-16T15:05:00,2026-11-16T11:25:00,Anytime,894.00,true,,true,false,false,A-List Preferred,true,2026-11-18T16:00:00,Land before 9pm local.
