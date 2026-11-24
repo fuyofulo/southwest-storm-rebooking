@@ -1,11 +1,13 @@
 """Create the tables (optional) and load both CSVs into Supabase.
 
     python -m scripts.seed
+    python -m scripts.seed --reset-confirmations   # clear agent confirmations: every booking waits again
 
 - If SUPABASE_DB_URL is set, db/schema.sql is applied first with psql.
   Otherwise run db/schema.sql once in the Supabase SQL editor.
 - Needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.
-Re-running is safe: the schema uses IF NOT EXISTS and rows are upserted.
+Re-running is safe: the schema uses IF NOT EXISTS, rows are upserted, and agents'
+confirmations are left alone.
 """
 from __future__ import annotations
 
@@ -65,6 +67,12 @@ def main() -> int:
     if not settings.use_supabase:
         print("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env first.", file=sys.stderr)
         return 1
+    if "--reset-confirmations" in sys.argv[1:]:  # put every booking back on the waiting list (demo rehearsals)
+        from app.db import SupabaseRepo
+
+        n = SupabaseRepo(settings.supabase_url, settings.supabase_service_role_key).clear_confirmations()
+        print(f"Removed {n} confirmation(s): every booking is waiting again.")
+        return 0
     if settings.supabase_db_url and not apply_schema(settings.supabase_db_url):
         return 1
 
