@@ -31,7 +31,9 @@ from .rules import REVENUE_MANAGEMENT, all_passed, check_option, route
 log = logging.getLogger("rebooking")
 
 READY, SPLIT, NONE = "ready_to_confirm", "split_party_confirm", "no_option_found"
-CONFIRMATION_FIELDS = ("booking_id", "confirmed_by", "confirmed_at", "suggestion_status", "option_id", "flight_nos")
+CONFIRMATION_FIELDS = (
+    "booking_id", "confirmed_by", "confirmed_at", "suggestion_status", "option_id", "flight_nos", "seconds_to_confirm",
+)
 SUGGESTION_STATUSES = (READY, SPLIT, NONE)
 
 
@@ -99,7 +101,14 @@ class RebookingService:
         out.sort(key=lambda s: (s["confirmation"]["confirmed_at"] or "", s["booking_id"]), reverse=True)
         return out
 
-    def confirm(self, booking_id: str, confirmed_by: str, request_date: date, option_id: str | None = None) -> dict | None:
+    def confirm(
+        self,
+        booking_id: str,
+        confirmed_by: str,
+        request_date: date,
+        option_id: str | None = None,
+        seconds_to_confirm: int | None = None,
+    ) -> dict | None:
         """Record the agent's decision against the booking. None if the booking doesn't exist.
 
         Raises AlreadyConfirmed, or SuggestionChanged when option_id no longer matches the current suggestion.
@@ -121,6 +130,7 @@ class RebookingService:
             "option_id": current,
             "flight_nos": [f["flight_no"] for f in (s["suggestion"] or {}).get("flights", [])],
             "suggestion": snapshot,
+            "seconds_to_confirm": seconds_to_confirm,  # opening the booking -> clicking Confirm, timed by the page
         }
         return self.repo.add_confirmation(record)
 

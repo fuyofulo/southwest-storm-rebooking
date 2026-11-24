@@ -68,5 +68,8 @@ create table if not exists confirmations (
     suggestion        jsonb not null                  -- what the agent saw when they clicked Confirm
 );
 
+-- Seconds from opening the booking to clicking Confirm, timed by the agent page (null if not timed).
+alter table confirmations add column if not exists seconds_to_confirm integer check (seconds_to_confirm >= 0);
+
 -- Tell Supabase's REST API to pick up the new tables right away (harmless elsewhere).
 notify pgrst, 'reload schema';

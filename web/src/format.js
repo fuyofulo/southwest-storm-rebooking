@@ -42,6 +42,16 @@ export function stamp(iso) {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${hh}:${mm}`
 }
 
+/** 42 -> "0:42", 425 -> "7:05" */
+export function duration(seconds) {
+  if (!Number.isFinite(seconds)) return '—'
+  const s = Math.round(seconds)
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const ss = String(s % 60).padStart(2, '0')
+  return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`
+}
+
 export function initials(name) {
   const words = (name || '').trim().split(/\s+/).filter(Boolean)
   if (!words.length) return '?'

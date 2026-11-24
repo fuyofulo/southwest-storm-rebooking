@@ -1,4 +1,4 @@
-import { initials, short, stamp, STATUS_HELP } from './format.js'
+import { duration, initials, short, stamp, STATUS_HELP } from './format.js'
 
 export function Status({ status }) {
   return (
@@ -79,7 +79,12 @@ export function BookingList({ items, selectedId, busyId, onOpen, onConfirm }) {
                 </td>
                 <td className="act">
                   {s.confirmation ? (
-                    <span className="done-by" title={`Confirmed by ${s.confirmation.confirmed_by}, ${stamp(s.confirmation.confirmed_at)}`}>
+                    <span
+                      className="done-by"
+                      title={`Confirmed by ${s.confirmation.confirmed_by}, ${stamp(s.confirmation.confirmed_at)}${
+                        Number.isFinite(s.confirmation.seconds_to_confirm) ? `, ${duration(s.confirmation.seconds_to_confirm)} after opening it` : ''
+                      }`}
+                    >
                       <span className="mini-avatar">{initials(s.confirmation.confirmed_by)}</span>
                       {stamp(s.confirmation.confirmed_at).split(' ').pop()}
                     </span>

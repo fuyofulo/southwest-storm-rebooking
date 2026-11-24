@@ -1,4 +1,4 @@
-import { day, initials, stamp, time, usd, when } from './format.js'
+import { day, duration, initials, stamp, time, usd, when } from './format.js'
 import { Status } from './List.jsx'
 import { Check } from './icons.jsx'
 
@@ -208,6 +208,7 @@ export function Detail({ s, agreed, onAgree, needsAgreement, busy, error, onConf
               <div className="faint small">
                 {stamp(done.confirmed_at)}
                 {done.flight_nos?.length ? ` · ${done.flight_nos.join(' + ')}` : ' · handled by hand'}
+                {Number.isFinite(done.seconds_to_confirm) && ` · took ${duration(done.seconds_to_confirm)}`}
               </div>
             </div>
             <span className="done-check" aria-hidden="true">

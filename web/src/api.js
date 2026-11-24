@@ -47,11 +47,11 @@ export function fetchConfirmed() {
   return call('/confirmations', { timeout: CONFIRM_TIMEOUT_MS })
 }
 
-export function confirmBooking(bookingId, confirmedBy, optionId) {
+export function confirmBooking(bookingId, confirmedBy, optionId, secondsToConfirm = null) {
   return call(`/bookings/${encodeURIComponent(bookingId)}/confirm`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ confirmed_by: confirmedBy, option_id: optionId }),
+    body: JSON.stringify({ confirmed_by: confirmedBy, option_id: optionId, seconds_to_confirm: secondsToConfirm }),
     timeout: CONFIRM_TIMEOUT_MS,
   })
 }

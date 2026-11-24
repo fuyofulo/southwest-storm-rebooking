@@ -62,6 +62,14 @@ def test_confirmations_lists_what_was_confirmed(client):
     assert [s["booking_id"] for s in client.get("/suggestions").json()] == ["BKG-1"]
 
 
+def test_confirm_stores_the_time_taken(client):
+    r = client.post("/bookings/BKG-1/confirm", json={"confirmed_by": "R", "seconds_to_confirm": 42})
+    assert r.status_code == 201 and r.json()["seconds_to_confirm"] == 42
+    assert client.get("/confirmations").json()[0]["confirmation"]["seconds_to_confirm"] == 42
+    assert client.post("/bookings/BKG-2/confirm", json={"confirmed_by": "R", "seconds_to_confirm": -1}).status_code == 422
+    assert client.post("/bookings/BKG-2/confirm", json={"confirmed_by": "R"}).json()["seconds_to_confirm"] is None
+
+
 def test_confirm_errors(client):
     assert client.post("/bookings/NOPE/confirm", json={"confirmed_by": "R"}).status_code == 404
     assert client.post("/bookings/BKG-1/confirm", json={"confirmed_by": "  "}).status_code == 422

@@ -55,6 +55,9 @@ USE_AI = Query(True, description="Set false to skip the model and use the code c
 class ConfirmRequest(BaseModel):
     confirmed_by: str = Field(..., min_length=1, description="The agent confirming, e.g. 'Rosalind Mkhize'")
     option_id: str | None = Field(None, description="The suggestion the agent saw (e.g. 'OPT-1'); refused if it has changed")
+    seconds_to_confirm: int | None = Field(
+        None, ge=0, le=86_400, description="Seconds from opening the booking to clicking Confirm, timed by the agent page"
+    )
 
 
 @app.get("/suggestions")
@@ -99,7 +102,13 @@ def confirm_booking(
     if not body.confirmed_by.strip():
         raise HTTPException(status_code=422, detail="confirmed_by is required")
     try:
-        record = service.confirm(booking_id, body.confirmed_by, resolve_request_date(get_settings(), request_date), body.option_id)
+        record = service.confirm(
+            booking_id,
+            body.confirmed_by,
+            resolve_request_date(get_settings(), request_date),
+            body.option_id,
+            body.seconds_to_confirm,
+        )
     except AlreadyConfirmed:
         raise HTTPException(status_code=409, detail=f"Booking {booking_id} is already confirmed")
     except SuggestionChanged as exc:

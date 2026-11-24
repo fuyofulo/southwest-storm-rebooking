@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { confirmBooking, fetchConfirmed, fetchWaiting } from './api.js'
-import { day, initials, matches } from './format.js'
+import { day, duration, initials, matches } from './format.js'
 import { BookingList } from './List.jsx'
 import { Detail } from './Detail.jsx'
 import { Check, ChevronLeft, ChevronRight, Moon, Refresh, Search, Sun } from './icons.jsx'
@@ -17,7 +17,8 @@ const FILTERS = [
   { id: 'confirmed', label: 'Confirmed', apart: true },
 ]
 
-const CONFIRMATION_FIELDS = ['booking_id', 'confirmed_by', 'confirmed_at', 'suggestion_status', 'option_id', 'flight_nos']
+const CONFIRMATION_FIELDS = ['booking_id', 'confirmed_by', 'confirmed_at', 'suggestion_status', 'option_id', 'flight_nos', 'seconds_to_confirm']
+const GOAL_SECONDS = 7 * 60 // the target: under 7 minutes per itinerary, down from about 14
 
 // Storage can be blocked (private window, previews): the page works without it.
 function readStored(key) {
@@ -77,6 +78,7 @@ export default function App() {
   const [theme, setTheme] = useState(() => readStored(THEME_KEY) || null)
   const agentInput = useRef(null)
   const searchInput = useRef(null)
+  const openedAt = useRef(new Map()) // booking_id -> when the agent first opened it (for the time to confirm)
 
   const load = useCallback(async ({ quiet = false } = {}) => {
     // A refresh keeps the list on screen; only the first load shows the loading state.
@@ -135,6 +137,15 @@ export default function App() {
   const selected = visible.find((s) => s.booking_id === selectedId) || visible[0] || null
   const index = selected ? visible.indexOf(selected) : -1
 
+  // The clock for a booking starts the first time it's open on screen and stops at Confirm.
+  const openKey = phase === 'ready' && selected && !selected.confirmation ? selected.booking_id : null
+  useEffect(() => {
+    if (openKey && !openedAt.current.has(openKey)) openedAt.current.set(openKey, Date.now())
+  }, [openKey])
+
+  const timed = done.map((s) => s.confirmation?.seconds_to_confirm).filter((n) => Number.isFinite(n))
+  const average = timed.length ? timed.reduce((a, b) => a + b, 0) / timed.length : null
+
   function open(id) {
     setSelectedId(id)
     setConfirmError(null)
@@ -179,7 +190,9 @@ export default function App() {
     }
     setBusyId(s.booking_id)
     try {
-      const record = await confirmBooking(s.booking_id, agent.trim(), s.suggestion?.option_id ?? null)
+      const started = openedAt.current.get(s.booking_id)
+      const seconds = started ? Math.max(0, Math.round((Date.now() - started) / 1000)) : null
+      const record = await confirmBooking(s.booking_id, agent.trim(), s.suggestion?.option_id ?? null, seconds)
       const confirmation = Object.fromEntries(CONFIRMATION_FIELDS.map((k) => [k, record[k]]))
       setDone((cur) => [{ ...s, confirmation }, ...cur.filter((x) => x.booking_id !== s.booking_id)])
       setToast(`${s.booking_id} recorded. Now book it in Southwest's system.`)
@@ -398,6 +411,14 @@ export default function App() {
           <span>
             <strong>{done.length}</strong> confirmed
           </span>
+          {average !== null && (
+            <span
+              className={`avg${average <= GOAL_SECONDS ? ' on-goal' : ''}`}
+              title={`Average time from opening a booking to clicking Confirm, over ${timed.length} confirmation${timed.length === 1 ? '' : 's'} timed by this page. Goal: under 7 minutes per itinerary.`}
+            >
+              avg <strong>{duration(average)}</strong> to confirm <span className="faint">· goal 7:00</span>
+            </span>
+          )}
           {requestDate && (
             <span className="wide-only">
               request date <strong>{day(requestDate)}</strong>

@@ -1128,6 +1128,10 @@ button.soft:hover {
   gap: 4px;
 }
 
+.avg.on-goal strong {
+  color: var(--ready);
+}
+
 .live {
   display: inline-flex;
   align-items: center;
